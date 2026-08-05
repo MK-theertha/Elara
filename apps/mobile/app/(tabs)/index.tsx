@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/useTheme';
 import { getGreeting } from '@/lib/greeting';
 import { Section, EmptyState, StatTile } from '@/components';
+import { useAuthStore } from '@/stores/auth-store';
 
 const QUICK_ACTIONS: {
   label: string;
@@ -20,6 +21,8 @@ const QUICK_ACTIONS: {
 export default function HomeScreen() {
   const { colors, spacing, radius, typography } = useTheme();
   const insets = useSafeAreaInsets();
+  const user = useAuthStore((s) => s.user);
+  const firstName = user?.name?.split(' ')[0];
 
   return (
     <ScrollView
@@ -31,7 +34,10 @@ export default function HomeScreen() {
       }}
     >
       <View style={{ paddingHorizontal: spacing.md, gap: spacing.xxs }}>
-        <Text style={[typography.displayLarge, { color: colors.text }]}>{getGreeting()} 👋</Text>
+        <Text style={[typography.displayLarge, { color: colors.text }]}>
+          {getGreeting()}
+          {firstName ? `, ${firstName}` : ''} 👋
+        </Text>
         <Text style={[typography.body, { color: colors.textSecondary }]}>
           Here&apos;s your day.
         </Text>

@@ -64,13 +64,14 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  refreshTokens RefreshToken[]
-  tasks         Task[]
-  events        Event[]
-  notes         Note[]
-  expenses      Expense[]
-  shoppingLists ShoppingList[]
-  reminders     Reminder[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  tasks               Task[]
+  events              Event[]
+  notes               Note[]
+  expenses            Expense[]
+  shoppingLists       ShoppingList[]
+  reminders           Reminder[]
 
   @@map("users")
 }
@@ -86,6 +87,19 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model Task {
@@ -154,16 +168,16 @@ model Event {
 }
 
 model Reminder {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  taskId    String?
-  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  eventId   String?
-  event     Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  remindAt  DateTime
-  message   String?
-  fired     Boolean  @default(false)
+  id       String   @id @default(uuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId   String?
+  task     Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  eventId  String?
+  event    Event?   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  remindAt DateTime
+  message  String?
+  fired    Boolean  @default(false)
 
   deletedAt DateTime?
   createdAt DateTime  @default(now())

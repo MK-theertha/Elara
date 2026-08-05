@@ -1,9 +1,12 @@
-import { ScrollView, View } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/useTheme';
-import { Card, ListItem, ScreenHeader, Section } from '@/components';
+import { Avatar, Card, ListItem, ScreenHeader, Section } from '@/components';
 import { useToastStore } from '@/stores/toast-store';
+import { useAuthStore } from '@/stores/auth-store';
+import { authApi } from '@/features/auth/api';
 
 const SETTINGS_ITEMS: { label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { label: 'Profile', icon: 'person-outline' },
@@ -18,11 +21,27 @@ const SETTINGS_ITEMS: { label: string; icon: keyof typeof Ionicons.glyphMap }[] 
 ];
 
 export default function MoreScreen() {
-  const { colors, spacing } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const showToast = useToastStore((s) => s.show);
+  const user = useAuthStore((s) => s.user);
+  const refreshToken = useAuthStore((s) => s.refreshToken);
+  const clearSession = useAuthStore((s) => s.clearSession);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const notImplemented = (label: string) => showToast(`${label} is coming in a later phase`);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      if (refreshToken) {
+        await authApi.logout(refreshToken).catch(() => {});
+      }
+    } finally {
+      await clearSession();
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <ScrollView
@@ -34,6 +53,27 @@ export default function MoreScreen() {
       }}
     >
       <ScreenHeader title="More" />
+
+      {user ? (
+        <View style={{ paddingHorizontal: spacing.md }}>
+          <Card>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Avatar name={user.name ?? user.email} size={48} />
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.subheading, { color: colors.text }]} numberOfLines={1}>
+                  {user.name ?? 'Welcome'}
+                </Text>
+                <Text
+                  style={[typography.bodySmall, { color: colors.textSecondary }]}
+                  numberOfLines={1}
+                >
+                  {user.email}
+                </Text>
+              </View>
+            </View>
+          </Card>
+        </View>
+      ) : null}
 
       <Section title="Your Data">
         <View style={{ paddingHorizontal: spacing.md }}>
@@ -73,9 +113,9 @@ export default function MoreScreen() {
       <View style={{ paddingHorizontal: spacing.md }}>
         <Card padded={false}>
           <ListItem
-            title="Logout"
+            title={loggingOut ? 'Logging out...' : 'Logout'}
             leadingIcon="log-out-outline"
-            onPress={() => notImplemented('Authentication')}
+            onPress={loggingOut ? undefined : handleLogout}
           />
         </Card>
       </View>

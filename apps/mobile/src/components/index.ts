@@ -14,3 +14,4 @@ export * from './StatTile';
 export * from './QuickActionFab';
 export * from './ScreenHeader';
 export * from './CreatePlaceholder';
+export * from './TextInput';
