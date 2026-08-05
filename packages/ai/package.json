@@ -1,0 +1,16 @@
+{
+  "name": "@elara/ai",
+  "private": true,
+  "version": "0.0.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "description": "Scaffold only. No AI/LLM dependencies or implementation until the AI phase begins.",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@elara/config": "*",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: elara-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: elara
+      POSTGRES_PASSWORD: elara
+      POSTGRES_DB: elara
+    ports:
+      # Host port 5433 -> container 5432. Not 5432:5432 because this machine
+      # already runs a native Postgres on host port 5432; using a different
+      # host port avoids silently colliding with that unrelated service.
+      - "5433:5432"
+    volumes:
+      - elara-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elara -d elara"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: elara-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - elara-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  elara-postgres-data:
+  elara-redis-data:
