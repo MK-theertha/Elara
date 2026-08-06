@@ -23,17 +23,23 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
 
   hydrate: async () => {
-    const stored = await sessionStorage.load();
-    if (!stored) {
+    try {
+      const stored = await sessionStorage.load();
+      if (!stored) {
+        set({ isHydrating: false });
+        return;
+      }
+      set({
+        accessToken: stored.accessToken,
+        refreshToken: stored.refreshToken,
+        isAuthenticated: true,
+        isHydrating: false,
+      });
+    } catch {
+      // SecureStore read failed (e.g. keystore unavailable) — fail open to
+      // a logged-out state rather than leaving the app stuck loading.
       set({ isHydrating: false });
-      return;
     }
-    set({
-      accessToken: stored.accessToken,
-      refreshToken: stored.refreshToken,
-      isAuthenticated: true,
-      isHydrating: false,
-    });
   },
 
   setSession: async (user, tokens) => {
