@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/useTheme';
@@ -33,7 +33,7 @@ export function ToastHost() {
       exiting={FadeOutDown}
       accessibilityLiveRegion="polite"
       accessibilityRole="alert"
-      pointerEvents="none"
+      pointerEvents="box-none"
       style={{
         position: 'absolute',
         left: spacing.md,
@@ -43,9 +43,31 @@ export function ToastHost() {
         borderRadius: radius.md,
         paddingVertical: spacing.sm,
         paddingHorizontal: spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: spacing.sm,
       }}
     >
-      <Text style={[typography.bodySmall, { color: colors.textInverse }]}>{toast.message}</Text>
+      <Text style={[typography.bodySmall, { color: colors.textInverse, flex: 1 }]}>
+        {toast.message}
+      </Text>
+      {toast.action ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            toast.action?.onPress();
+            dismiss();
+          }}
+          hitSlop={8}
+        >
+          <View>
+            <Text style={[typography.bodySmall, { color: colors.textInverse, fontWeight: '700' }]}>
+              {toast.action.label}
+            </Text>
+          </View>
+        </Pressable>
+      ) : null}
     </Animated.View>
   );
 }
