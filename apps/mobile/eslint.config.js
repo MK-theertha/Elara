@@ -21,6 +21,18 @@ module.exports = [
     },
   },
   {
+    // react-hooks' React Compiler rules (bundled via eslint-config-expo) flag
+    // react-native-reanimated's `sharedValue.value = ...` as an illegal mutation —
+    // that assignment is Reanimated's documented, correct API, not a bug, and this
+    // app's animation system (AnimatedPressable, Checkbox, Toggle, ProgressRing,
+    // FloatingTabBar, QuickActionFab, ...) relies on it throughout. The Babel React
+    // Compiler plugin itself isn't enabled in babel.config.js, so this rule is pure
+    // static-analysis noise here.
+    rules: {
+      'react-hooks/immutability': 'off',
+    },
+  },
+  {
     // babel.config.js, metro.config.js, eslint.config.js are plain CommonJS.
     files: ['**/*.config.js'],
     languageOptions: {

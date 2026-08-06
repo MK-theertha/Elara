@@ -1,153 +1,358 @@
-import { View, FlatList, Pressable, Text } from 'react-native';
+import { useMemo, useState } from 'react';
+import { View, FlatList, ScrollView, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
 import { router } from 'expo-router';
+import { Check, ListTodo, Trash2 } from 'lucide-react-native';
 import type { TaskDto } from '@elara/validation';
 import { useTheme } from '@/theme/useTheme';
 import {
-  Badge,
   Chip,
   EmptyState,
   ErrorState,
-  IconButton,
-  LoadingState,
+  ProgressRing,
   ScreenHeader,
+  SegmentedControl,
+  SkeletonCard,
+  SwipeableRow,
 } from '@/components';
+import { TaskCard } from '@/components/cards';
 import { tasksApi } from '@/features/tasks/api';
 import { useToastStore } from '@/stores/toast-store';
 import { ApiError } from '@/lib/api-client';
-import { formatDueDate, dueDateTone } from '@/features/tasks/due-date';
+import {
+  PRIORITY_ORDER,
+  priorityColor,
+  priorityLabel,
+  type TaskPriority,
+} from '@/features/tasks/priority';
+import { formatDueDate } from '@/features/tasks/due-date';
 
-const VIEWS = ['Today', 'Upcoming', 'Completed', 'All'] as const;
-type TaskView = (typeof VIEWS)[number];
+const FILTERS = ['Today', 'Upcoming', 'Completed', 'All'] as const;
+type TaskFilter = (typeof FILTERS)[number];
 
-const PRIORITY_TONE: Record<TaskDto['priority'], 'neutral' | 'warning' | 'danger'> = {
-  LOW: 'neutral',
-  MEDIUM: 'neutral',
-  HIGH: 'warning',
-  URGENT: 'danger',
-};
+type TaskLayout = 'list' | 'kanban' | 'timeline';
+
+const LAYOUTS: { label: string; value: TaskLayout }[] = [
+  { label: 'List', value: 'list' },
+  { label: 'Kanban', value: 'kanban' },
+  { label: 'Timeline', value: 'timeline' },
+];
+
+function daysUntil(iso: string): number {
+  const diffMs = new Date(iso).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0);
+  return Math.round(diffMs / 86_400_000);
+}
+
+function timelineBucket(task: TaskDto): string {
+  if (!task.dueDate) return 'No due date';
+  const days = daysUntil(task.dueDate);
+  if (days < 0) return 'Overdue';
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  if (days <= 7) return 'This week';
+  return 'Later';
+}
+
+const TIMELINE_ORDER = ['Overdue', 'Today', 'Tomorrow', 'This week', 'Later', 'No due date'];
 
 export default function TasksScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
-  const [view, setView] = useState<TaskView>('Today');
+  const [filter, setFilter] = useState<TaskFilter>('Today');
+  const [layout, setLayout] = useState<TaskLayout>('list');
+  const [category, setCategory] = useState<string | null>(null);
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
-    queryKey: ['tasks', view],
-    queryFn: () => tasksApi.list({ view: view.toLowerCase() as Lowercase<TaskView> }),
+    queryKey: ['tasks', filter],
+    queryFn: () => tasksApi.list({ view: filter.toLowerCase() as Lowercase<TaskFilter> }),
   });
+
+  const categories = useMemo(
+    () => Array.from(new Set((data ?? []).map((t) => t.category).filter((c): c is string => !!c))),
+    [data],
+  );
+  const filtered = useMemo(
+    () => (category ? (data ?? []).filter((t) => t.category === category) : (data ?? [])),
+    [data, category],
+  );
+
+  const todayCompletion = useMemo(() => {
+    if (filter !== 'Today' || !data || data.length === 0) return null;
+    const done = data.filter((t) => t.status === 'COMPLETED').length;
+    return { done, total: data.length, ratio: done / data.length };
+  }, [filter, data]);
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['tasks'] });
+  const reportError = (err: unknown) =>
+    showToast(err instanceof ApiError ? err.message : 'Something went wrong', 'danger');
 
   const handleToggleComplete = async (task: TaskDto) => {
     try {
-      if (task.status === 'COMPLETED') {
-        await tasksApi.reopen(task.id);
-      } else {
-        await tasksApi.complete(task.id);
-      }
-      await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      if (task.status === 'COMPLETED') await tasksApi.reopen(task.id);
+      else await tasksApi.complete(task.id);
+      await invalidate();
     } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Something went wrong', 'danger');
+      reportError(err);
     }
   };
 
+  const handleDelete = async (task: TaskDto) => {
+    try {
+      await tasksApi.delete(task.id);
+      await invalidate();
+      showToast('Task deleted', 'success', {
+        label: 'Undo',
+        onPress: async () => {
+          try {
+            await tasksApi.restore(task.id);
+            await invalidate();
+          } catch (err) {
+            reportError(err);
+          }
+        },
+      });
+    } catch (err) {
+      reportError(err);
+    }
+  };
+
+  const emptyState = (
+    <EmptyState
+      icon={ListTodo}
+      title={`No ${filter.toLowerCase()} tasks`}
+      description="Tap the + button to create your first task."
+    />
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
-      <ScreenHeader title="Tasks" />
-      <View
-        style={{
-          flexDirection: 'row',
-          gap: spacing.xs,
-          paddingHorizontal: spacing.md,
-          paddingBottom: spacing.sm,
-        }}
-      >
-        {VIEWS.map((v) => (
-          <Chip key={v} label={v} selected={view === v} onPress={() => setView(v)} />
-        ))}
+      <ScreenHeader
+        title="Tasks"
+        accessory={
+          todayCompletion ? (
+            <ProgressRing
+              progress={todayCompletion.ratio}
+              size={44}
+              strokeWidth={5}
+              showPercentage={false}
+              label={`${todayCompletion.done}/${todayCompletion.total}`}
+            />
+          ) : undefined
+        }
+      />
+
+      <View style={{ paddingHorizontal: spacing.md, gap: spacing.sm }}>
+        <SegmentedControl options={LAYOUTS} value={layout} onChange={setLayout} />
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: spacing.xs }}
+        >
+          {FILTERS.map((f) => (
+            <Chip key={f} label={f} selected={filter === f} onPress={() => setFilter(f)} />
+          ))}
+        </ScrollView>
+
+        {categories.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: spacing.xs }}
+          >
+            <Chip
+              label="All categories"
+              selected={category === null}
+              onPress={() => setCategory(null)}
+            />
+            {categories.map((c) => (
+              <Chip key={c} label={c} selected={category === c} onPress={() => setCategory(c)} />
+            ))}
+          </ScrollView>
+        ) : null}
       </View>
 
       {isLoading ? (
-        <LoadingState />
+        <View style={{ padding: spacing.md, gap: spacing.sm }}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
       ) : isError ? (
         <ErrorState description="Couldn't load your tasks." onRetry={() => refetch()} />
-      ) : (
+      ) : filtered.length === 0 ? (
+        emptyState
+      ) : layout === 'list' ? (
         <FlatList
-          data={data}
+          data={filtered}
           keyExtractor={(task) => task.id}
           refreshing={isRefetching}
           onRefresh={refetch}
-          contentContainerStyle={
-            data && data.length > 0 ? undefined : { flexGrow: 1, justifyContent: 'center' }
-          }
-          ListEmptyComponent={
-            <EmptyState
-              icon="checkbox-outline"
-              title={`No ${view.toLowerCase()} tasks`}
-              description="Tap the + button to create your first task."
-            />
-          }
+          contentContainerStyle={{
+            padding: spacing.md,
+            gap: spacing.sm,
+            paddingBottom: insets.bottom + 140,
+          }}
           renderItem={({ item }) => (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingVertical: spacing.xs,
-                paddingHorizontal: spacing.md,
-                minHeight: 56,
-                gap: spacing.sm,
+            <SwipeableRow
+              leftAction={{
+                icon: Check,
+                color: colors.success,
+                onTrigger: () => handleToggleComplete(item),
+              }}
+              rightAction={{
+                icon: Trash2,
+                color: colors.danger,
+                onTrigger: () => handleDelete(item),
               }}
             >
-              <IconButton
-                name={item.status === 'COMPLETED' ? 'checkbox' : 'square-outline'}
-                color={item.status === 'COMPLETED' ? colors.primary : colors.textSecondary}
-                accessibilityLabel={
-                  item.status === 'COMPLETED' ? 'Reopen task' : 'Mark task complete'
-                }
-                onPress={() => handleToggleComplete(item)}
-              />
-              <Pressable
-                accessibilityRole="button"
+              <TaskCard
+                task={item}
                 onPress={() => router.push(`/tasks/${item.id}`)}
-                style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.6 : 1 })}
-              >
-                <Text
-                  style={[
-                    typography.body,
-                    {
-                      color: item.status === 'COMPLETED' ? colors.textTertiary : colors.text,
-                      textDecorationLine: item.status === 'COMPLETED' ? 'line-through' : 'none',
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {item.title}
-                </Text>
-                {item.category ? (
-                  <Text
-                    style={[typography.bodySmall, { color: colors.textSecondary }]}
-                    numberOfLines={1}
-                  >
-                    {item.category}
-                  </Text>
-                ) : null}
-              </Pressable>
-              {formatDueDate(item.dueDate) && item.status === 'PENDING' ? (
-                <Badge
-                  label={formatDueDate(item.dueDate)!}
-                  tone={dueDateTone(item.dueDate, item.status)}
-                />
-              ) : null}
-              {item.priority !== 'LOW' ? (
-                <Badge label={item.priority} tone={PRIORITY_TONE[item.priority]} />
-              ) : null}
-            </View>
+                onToggleComplete={() => handleToggleComplete(item)}
+              />
+            </SwipeableRow>
           )}
+        />
+      ) : layout === 'kanban' ? (
+        <KanbanBoard
+          tasks={filtered}
+          onPressTask={(id) => router.push(`/tasks/${id}`)}
+          bottomInset={insets.bottom}
+        />
+      ) : (
+        <TimelineView
+          tasks={filtered}
+          onPressTask={(id) => router.push(`/tasks/${id}`)}
+          bottomInset={insets.bottom}
         />
       )}
     </View>
+  );
+}
+
+function KanbanBoard({
+  tasks,
+  onPressTask,
+  bottomInset,
+}: {
+  tasks: TaskDto[];
+  onPressTask: (id: string) => void;
+  bottomInset: number;
+}) {
+  const { colors, spacing, radius, typography } = useTheme();
+  const columns: {
+    key: TaskPriority | 'COMPLETED';
+    label: string;
+    color: string;
+    tasks: TaskDto[];
+  }[] = [
+    ...PRIORITY_ORDER.map((p) => ({
+      key: p,
+      label: priorityLabel(p),
+      color: priorityColor(p, colors),
+      tasks: tasks.filter((t) => t.status === 'PENDING' && t.priority === p),
+    })),
+    {
+      key: 'COMPLETED' as const,
+      label: 'Completed',
+      color: colors.success,
+      tasks: tasks.filter((t) => t.status === 'COMPLETED'),
+    },
+  ];
+
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{
+        padding: spacing.md,
+        gap: spacing.sm,
+        paddingBottom: bottomInset + 140,
+      }}
+    >
+      {columns.map((col) => (
+        <View
+          key={col.key}
+          style={{
+            width: 240,
+            backgroundColor: colors.backgroundSecondary,
+            borderRadius: radius.card,
+            padding: spacing.sm,
+            gap: spacing.sm,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: col.color }} />
+            <Text style={[typography.caption, { color: colors.text }]}>{col.label}</Text>
+            <Text style={[typography.caption, { color: colors.textTertiary }]}>
+              {col.tasks.length}
+            </Text>
+          </View>
+          <View style={{ gap: spacing.xs }}>
+            {col.tasks.map((task) => (
+              <TaskCard key={task.id} task={task} onPress={() => onPressTask(task.id)} />
+            ))}
+            {col.tasks.length === 0 ? (
+              <Text
+                style={[typography.caption, { color: colors.textTertiary, padding: spacing.xs }]}
+              >
+                Nothing here
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
+
+function TimelineView({
+  tasks,
+  onPressTask,
+  bottomInset,
+}: {
+  tasks: TaskDto[];
+  onPressTask: (id: string) => void;
+  bottomInset: number;
+}) {
+  const { colors, spacing, typography } = useTheme();
+  const grouped = TIMELINE_ORDER.map((bucket) => ({
+    bucket,
+    tasks: tasks.filter((t) => timelineBucket(t) === bucket),
+  })).filter((g) => g.tasks.length > 0);
+
+  return (
+    <ScrollView
+      contentContainerStyle={{
+        padding: spacing.md,
+        gap: spacing.lg,
+        paddingBottom: bottomInset + 140,
+      }}
+    >
+      {grouped.map((group) => (
+        <View key={group.bucket} style={{ gap: spacing.sm }}>
+          <Text style={[typography.sectionTitle, { color: colors.text }]}>{group.bucket}</Text>
+          <View style={{ gap: spacing.sm }}>
+            {group.tasks.map((task) => (
+              <View
+                key={task.id}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+              >
+                <Text style={[typography.caption, { color: colors.textTertiary, width: 60 }]}>
+                  {formatDueDate(task.dueDate) ?? ''}
+                </Text>
+                <View style={{ flex: 1 }}>
+                  <TaskCard task={task} onPress={() => onPressTask(task.id)} />
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      ))}
+    </ScrollView>
   );
 }

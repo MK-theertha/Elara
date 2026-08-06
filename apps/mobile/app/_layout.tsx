@@ -2,13 +2,24 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 import { queryClient } from '@/lib/query-client';
 import { ToastHost, LoadingState } from '@/components';
 import { useAuthStore } from '@/stores/auth-store';
-import { useTheme } from '@/theme/useTheme';
+import { ThemeProvider, useTheme } from '@/theme/useTheme';
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { colors } = useTheme();
@@ -43,22 +54,57 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AppShell() {
+  const { colors, isDark } = useTheme();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BottomSheetModalProvider>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <AuthGate>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="tasks" />
+            <Stack.Screen name="ai" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="create" options={{ presentation: 'modal' }} />
+          </Stack>
+        </AuthGate>
+        <ToastHost />
+      </BottomSheetModalProvider>
+    </QueryClientProvider>
+  );
+}
+
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <StatusBar style="auto" />
-          <AuthGate>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="tasks" />
-              <Stack.Screen name="create" options={{ presentation: 'modal' }} />
-            </Stack>
-          </AuthGate>
-          <ToastHost />
-        </QueryClientProvider>
+        <ThemeProvider>
+          <AppShell />
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

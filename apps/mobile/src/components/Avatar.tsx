@@ -1,9 +1,11 @@
-import { View, Text } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { useTheme } from '@/theme/useTheme';
 
 export interface AvatarProps {
   name: string;
+  imageUri?: string;
   size?: number;
+  ring?: boolean;
 }
 
 function getInitials(name: string): string {
@@ -14,25 +16,37 @@ function getInitials(name: string): string {
   return (first + last).toUpperCase();
 }
 
-export function Avatar({ name, size = 40 }: AvatarProps) {
-  const { colors, typography } = useTheme();
+export function Avatar({ name, imageUri, size = 40, ring = false }: AvatarProps) {
+  const { colors } = useTheme();
+
+  const ringStyle = ring ? { borderWidth: 3, borderColor: colors.surface, padding: 0 } : null;
 
   return (
     <View
       accessibilityElementsHidden
       importantForAccessibility="no"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: colors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+        },
+        ringStyle,
+      ]}
     >
-      <Text style={[typography.label, { color: colors.onPrimary, fontSize: size * 0.4 }]}>
-        {getInitials(name)}
-      </Text>
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={{ width: '100%', height: '100%' }} />
+      ) : (
+        <Text
+          style={{ color: colors.onPrimary, fontFamily: 'Inter_600SemiBold', fontSize: size * 0.4 }}
+        >
+          {getInitials(name)}
+        </Text>
+      )}
     </View>
   );
 }

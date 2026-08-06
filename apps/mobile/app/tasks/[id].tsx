@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, Alert, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Plus, X } from 'lucide-react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +14,16 @@ import {
   type RecurrenceFreq,
 } from '@elara/validation';
 import { useTheme } from '@/theme/useTheme';
-import { Badge, Button, Chip, IconButton, LoadingState, ErrorState, TextInput } from '@/components';
+import {
+  Badge,
+  Button,
+  Checkbox,
+  Chip,
+  IconButton,
+  LoadingState,
+  ErrorState,
+  TextInput,
+} from '@/components';
 import { tasksApi } from '@/features/tasks/api';
 import { useToastStore } from '@/stores/toast-store';
 import { ApiError } from '@/lib/api-client';
@@ -258,7 +267,7 @@ export default function TaskDetailScreen() {
                 <Badge label={`Repeats ${RECURRENCE_LABELS[task.recurrence].toLowerCase()}`} />
               ) : null}
             </View>
-            <Text style={[typography.title, { color: colors.text }]}>{task.title}</Text>
+            <Text style={[typography.screenTitle, { color: colors.text }]}>{task.title}</Text>
             {task.notes ? (
               <Text style={[typography.body, { color: colors.textSecondary }]}>{task.notes}</Text>
             ) : null}
@@ -274,37 +283,44 @@ export default function TaskDetailScreen() {
           </View>
 
           <View style={{ gap: spacing.sm }}>
-            <Text style={[typography.label, { color: colors.text }]}>Subtasks</Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>Subtasks</Text>
             {(task.subtasks ?? []).map((subtask) => (
-              <Pressable
+              <View
                 key={subtask.id}
-                accessibilityRole="button"
-                onPress={() => toggleSubtask(subtask.id, subtask.completed)}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
               >
-                <Ionicons
-                  name={subtask.completed ? 'checkbox' : 'square-outline'}
+                <Checkbox
+                  checked={subtask.completed}
+                  onToggle={() => toggleSubtask(subtask.id, subtask.completed)}
+                  color={colors.success}
                   size={20}
-                  color={subtask.completed ? colors.primary : colors.textSecondary}
+                  accessibilityLabel={
+                    subtask.completed ? 'Mark subtask incomplete' : 'Mark subtask complete'
+                  }
                 />
-                <Text
-                  style={[
-                    typography.body,
-                    {
-                      color: subtask.completed ? colors.textTertiary : colors.text,
-                      textDecorationLine: subtask.completed ? 'line-through' : 'none',
-                      flex: 1,
-                    },
-                  ]}
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => toggleSubtask(subtask.id, subtask.completed)}
+                  style={{ flex: 1 }}
                 >
-                  {subtask.title}
-                </Text>
+                  <Text
+                    style={[
+                      typography.body,
+                      {
+                        color: subtask.completed ? colors.textTertiary : colors.text,
+                        textDecorationLine: subtask.completed ? 'line-through' : 'none',
+                      },
+                    ]}
+                  >
+                    {subtask.title}
+                  </Text>
+                </Pressable>
                 <IconButton
-                  name="close"
+                  icon={X}
                   accessibilityLabel="Remove subtask"
                   onPress={() => removeSubtask(subtask.id)}
                 />
-              </Pressable>
+              </View>
             ))}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
               <View style={{ flex: 1 }}>
@@ -316,7 +332,12 @@ export default function TaskDetailScreen() {
                   returnKeyType="done"
                 />
               </View>
-              <IconButton name="add-circle" accessibilityLabel="Add subtask" onPress={addSubtask} />
+              <IconButton
+                icon={Plus}
+                accessibilityLabel="Add subtask"
+                variant="filled"
+                onPress={addSubtask}
+              />
             </View>
           </View>
         </>
@@ -371,7 +392,7 @@ export default function TaskDetailScreen() {
               )}
             />
             <View style={{ gap: spacing.xxs }}>
-              <Text style={[typography.label, { color: colors.text }]}>Priority</Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>Priority</Text>
               <Controller
                 control={control}
                 name="priority"
@@ -391,7 +412,7 @@ export default function TaskDetailScreen() {
             </View>
 
             <View style={{ gap: spacing.xxs }}>
-              <Text style={[typography.label, { color: colors.text }]}>Due date</Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>Due date</Text>
               <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
                 {DUE_DATE_OPTIONS.map((option) => (
                   <Chip
@@ -405,7 +426,7 @@ export default function TaskDetailScreen() {
             </View>
 
             <View style={{ gap: spacing.xxs }}>
-              <Text style={[typography.label, { color: colors.text }]}>Repeat</Text>
+              <Text style={[typography.caption, { color: colors.textSecondary }]}>Repeat</Text>
               <Controller
                 control={control}
                 name="recurrence"

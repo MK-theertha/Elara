@@ -22,7 +22,7 @@ const registerFormSchema = registerSchema
 type RegisterFormInput = z.infer<typeof registerFormSchema>;
 
 export default function RegisterScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const setSession = useAuthStore((s) => s.setSession);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -72,14 +72,20 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ gap: spacing.xxs }}>
-          <Text style={[typography.title, { color: colors.text }]}>Create your account</Text>
+          <Text style={[typography.screenTitle, { color: colors.text }]}>Create your account</Text>
           <Text style={[typography.body, { color: colors.textSecondary }]}>
             Start organizing your life with Elara.
           </Text>
         </View>
 
         {submitError ? (
-          <View style={{ backgroundColor: colors.danger, borderRadius: 10, padding: spacing.sm }}>
+          <View
+            style={{
+              backgroundColor: colors.danger,
+              borderRadius: radius.button,
+              padding: spacing.sm,
+            }}
+          >
             <Text style={[typography.bodySmall, { color: colors.textInverse }]}>{submitError}</Text>
           </View>
         ) : null}

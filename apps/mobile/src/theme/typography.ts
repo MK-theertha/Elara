@@ -1,25 +1,25 @@
-import { Platform, type TextStyle } from 'react-native';
+import type { TextStyle } from 'react-native';
 
-const fontFamily = Platform.select({
-  ios: 'System',
-  android: 'sans-serif',
-  default: 'System',
-});
+type TextPreset = Pick<TextStyle, 'fontFamily' | 'fontSize' | 'lineHeight' | 'letterSpacing'>;
 
-type TextPreset = Pick<TextStyle, 'fontSize' | 'fontWeight' | 'lineHeight'>;
+/** Inter, loaded via @expo-google-fonts/inter in the root layout (see app/_layout.tsx).
+ * Presets carry the weight in fontFamily itself (Inter_600SemiBold etc.) rather than a
+ * separate fontWeight — mixing the two is unreliable on Android with custom fonts. */
+export const typography = {
+  displayLarge: { fontFamily: 'Inter_700Bold', fontSize: 34, lineHeight: 40 },
+  screenTitle: { fontFamily: 'Inter_700Bold', fontSize: 26, lineHeight: 32 },
+  sectionTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 18, lineHeight: 24 },
+  cardTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 16, lineHeight: 22 },
+  body: { fontFamily: 'Inter_400Regular', fontSize: 15, lineHeight: 22 },
+  bodyMedium: { fontFamily: 'Inter_500Medium', fontSize: 15, lineHeight: 22 },
+  bodySmall: { fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 18 },
+  caption: { fontFamily: 'Inter_500Medium', fontSize: 13, lineHeight: 18 },
+  tinyLabel: {
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 11,
+    lineHeight: 14,
+    letterSpacing: 0.4,
+  },
+} satisfies Record<string, TextPreset>;
 
-export const typography: Record<
-  'displayLarge' | 'title' | 'heading' | 'subheading' | 'body' | 'bodySmall' | 'caption' | 'label',
-  TextPreset
-> = {
-  displayLarge: { fontSize: 32, fontWeight: '700', lineHeight: 38 },
-  title: { fontSize: 24, fontWeight: '700', lineHeight: 30 },
-  heading: { fontSize: 18, fontWeight: '600', lineHeight: 24 },
-  subheading: { fontSize: 16, fontWeight: '600', lineHeight: 22 },
-  body: { fontSize: 15, fontWeight: '400', lineHeight: 21 },
-  bodySmall: { fontSize: 13, fontWeight: '400', lineHeight: 18 },
-  caption: { fontSize: 12, fontWeight: '500', lineHeight: 16 },
-  label: { fontSize: 13, fontWeight: '600', lineHeight: 18 },
-};
-
-export { fontFamily };
+export type TypographyToken = keyof typeof typography;

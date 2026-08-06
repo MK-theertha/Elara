@@ -1,10 +1,10 @@
 import { View } from 'react-native';
-import type { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/useTheme';
 import { EmptyState } from './EmptyState';
+import type { IconType } from './icon-type';
 
 export interface CreatePlaceholderProps {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: IconType;
   resource: string;
 }
 

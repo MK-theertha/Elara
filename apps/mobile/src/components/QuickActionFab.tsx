@@ -1,112 +1,134 @@
-import { useState } from 'react';
-import { Modal, Pressable, View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useRef, useState } from 'react';
+import { Text, View } from 'react-native';
+import { CalendarPlus, CheckSquare, FileText, Plus, Wallet } from 'lucide-react-native';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useTheme } from '@/theme/useTheme';
+import { motion } from '@/theme/animations';
+import { AnimatedPressable } from './AnimatedPressable';
+import { AppBottomSheet } from './BottomSheet';
+import type { IconType } from './icon-type';
 
-const QUICK_ACTIONS: {
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  route: '/create/task' | '/create/note' | '/create/expense' | '/create/event';
-}[] = [
-  { label: 'Task', icon: 'checkbox-outline', route: '/create/task' },
-  { label: 'Note', icon: 'document-text-outline', route: '/create/note' },
-  { label: 'Expense', icon: 'cash-outline', route: '/create/expense' },
-  { label: 'Event', icon: 'calendar-outline', route: '/create/event' },
-];
+type QuickActionRoute = '/create/task' | '/create/note' | '/create/expense' | '/create/event';
 
 export function QuickActionFab() {
   const { colors, spacing, radius, typography, shadows } = useTheme();
   const insets = useSafeAreaInsets();
+  const sheetRef = useRef<BottomSheetModal>(null);
   const [open, setOpen] = useState(false);
+  const rotation = useSharedValue(0);
 
-  const handleSelect = (route: (typeof QUICK_ACTIONS)[number]['route']) => {
+  const quickActions: { label: string; icon: IconType; route: QuickActionRoute; color: string }[] =
+    [
+      { label: 'Task', icon: CheckSquare, route: '/create/task', color: colors.primary },
+      { label: 'Note', icon: FileText, route: '/create/note', color: colors.accent },
+      { label: 'Expense', icon: Wallet, route: '/create/expense', color: colors.success },
+      { label: 'Event', icon: CalendarPlus, route: '/create/event', color: colors.warning },
+    ];
+
+  const handleOpen = () => {
+    setOpen(true);
+    rotation.value = withTiming(45, motion.timing.fast);
+    sheetRef.current?.present();
+  };
+
+  const handleClose = () => {
     setOpen(false);
+    rotation.value = withTiming(0, motion.timing.fast);
+    sheetRef.current?.dismiss();
+  };
+
+  const handleSelect = (route: QuickActionRoute) => {
+    handleClose();
     router.push(route);
   };
 
+  const iconStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.value}deg` }] }));
+
   return (
     <>
-      <Pressable
+      <AnimatedPressable
         accessibilityRole="button"
-        accessibilityLabel="Create new item"
-        onPress={() => setOpen(true)}
-        style={({ pressed }) => [
-          styles.fab,
-          shadows.lg,
+        accessibilityLabel={open ? 'Close quick actions' : 'Create new item'}
+        onPress={() => (open ? handleClose() : handleOpen())}
+        scaleTo={0.9}
+        style={[
           {
-            bottom: insets.bottom + 72,
+            position: 'absolute',
+            alignSelf: 'center',
+            bottom: insets.bottom + 94,
+            width: 60,
+            height: 60,
+            borderRadius: radius.fab,
             backgroundColor: colors.primary,
-            borderRadius: radius.full,
-            opacity: pressed ? 0.9 : 1,
+            alignItems: 'center',
+            justifyContent: 'center',
           },
+          shadows.lg,
         ]}
       >
-        <Ionicons name="add" size={28} color={colors.onPrimary} />
-      </Pressable>
+        <Animated.View style={iconStyle}>
+          <Plus size={28} color={colors.onPrimary} strokeWidth={2.25} />
+        </Animated.View>
+      </AnimatedPressable>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable
-          accessibilityLabel="Close quick actions"
-          onPress={() => setOpen(false)}
-          style={[styles.backdrop, { backgroundColor: colors.overlay }]}
-        >
-          <View
-            style={[
-              styles.sheet,
-              shadows.lg,
-              {
-                backgroundColor: colors.surfaceElevated,
-                borderRadius: radius.lg,
-                paddingBottom: insets.bottom + spacing.md,
-              },
-            ]}
-          >
-            <Text style={[typography.label, { color: colors.textSecondary, padding: spacing.md }]}>
-              QUICK ACTIONS
-            </Text>
-            {QUICK_ACTIONS.map((action) => (
-              <Pressable
+      <AppBottomSheet
+        ref={sheetRef}
+        snapPoints={['34%']}
+        onDismiss={() => {
+          setOpen(false);
+          rotation.value = withTiming(0, motion.timing.fast);
+        }}
+      >
+        <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.xs, gap: spacing.sm }}>
+          <Text style={[typography.tinyLabel, { color: colors.textTertiary }]}>QUICK ACTIONS</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {quickActions.map((action, i) => (
+              <Animated.View
                 key={action.route}
-                accessibilityRole="button"
-                onPress={() => handleSelect(action.route)}
-                style={({ pressed }) => [
-                  styles.row,
-                  { paddingHorizontal: spacing.md, opacity: pressed ? 0.6 : 1 },
-                ]}
+                entering={FadeInDown.delay(i * 40)
+                  .springify()
+                  .damping(16)}
+                style={{ flexBasis: '47%', flexGrow: 1 }}
               >
-                <Ionicons name={action.icon} size={22} color={colors.primary} />
-                <Text style={[typography.body, { color: colors.text }]}>{action.label}</Text>
-              </Pressable>
+                <AnimatedPressable
+                  accessibilityRole="button"
+                  onPress={() => handleSelect(action.route)}
+                  scaleTo={0.95}
+                  style={{
+                    alignItems: 'center',
+                    gap: spacing.xs,
+                    backgroundColor: colors.backgroundSecondary,
+                    borderRadius: radius.card,
+                    paddingVertical: spacing.md,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: radius.button,
+                      backgroundColor: `${action.color}1A`,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <action.icon size={22} color={action.color} strokeWidth={1.75} />
+                  </View>
+                  <Text style={[typography.bodySmall, { color: colors.text }]}>{action.label}</Text>
+                </AnimatedPressable>
+              </Animated.View>
             ))}
           </View>
-        </Pressable>
-      </Modal>
+        </View>
+      </AppBottomSheet>
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  fab: {
-    position: 'absolute',
-    alignSelf: 'center',
-    width: 56,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    paddingTop: 4,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    minHeight: 52,
-  },
-});

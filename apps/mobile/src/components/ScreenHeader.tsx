@@ -19,7 +19,7 @@ export function ScreenHeader({ title, accessory }: ScreenHeaderProps) {
         paddingBottom: spacing.sm,
       }}
     >
-      <Text style={[typography.title, { color: colors.text }]}>{title}</Text>
+      <Text style={[typography.screenTitle, { color: colors.text }]}>{title}</Text>
       {accessory}
     </View>
   );

@@ -1,9 +1,10 @@
-import { Pressable, type PressableProps } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import type { PressableProps } from 'react-native';
 import { useTheme } from '@/theme/useTheme';
+import { AnimatedPressable } from './AnimatedPressable';
+import type { IconType } from './icon-type';
 
 export interface IconButtonProps extends Omit<PressableProps, 'style'> {
-  name: keyof typeof Ionicons.glyphMap;
+  icon: IconType;
   size?: number;
   color?: string;
   accessibilityLabel: string;
@@ -11,8 +12,8 @@ export interface IconButtonProps extends Omit<PressableProps, 'style'> {
 }
 
 export function IconButton({
-  name,
-  size = 22,
+  icon: Icon,
+  size = 21,
   color,
   accessibilityLabel,
   variant = 'plain',
@@ -23,26 +24,25 @@ export function IconButton({
   const iconColor = color ?? colors.text;
 
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: disabled ?? undefined }}
       disabled={disabled}
       hitSlop={8}
-      style={({ pressed }) => [
-        {
-          width: 44,
-          height: 44,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: radius.full,
-          backgroundColor: variant === 'filled' ? colors.backgroundSecondary : 'transparent',
-          opacity: disabled ? 0.4 : pressed ? 0.6 : 1,
-        },
-      ]}
+      scaleTo={0.88}
+      style={{
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: radius.full,
+        backgroundColor: variant === 'filled' ? colors.backgroundSecondary : 'transparent',
+        opacity: disabled ? 0.4 : 1,
+      }}
       {...pressableProps}
     >
-      <Ionicons name={name} size={size} color={iconColor} />
-    </Pressable>
+      <Icon size={size} color={iconColor} strokeWidth={1.75} />
+    </AnimatedPressable>
   );
 }

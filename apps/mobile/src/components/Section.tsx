@@ -1,5 +1,6 @@
-import { View, Text, Pressable } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTheme } from '@/theme/useTheme';
+import { AnimatedPressable } from './AnimatedPressable';
 
 export interface SectionProps {
   title: string;
@@ -21,11 +22,16 @@ export function Section({ title, actionLabel, onActionPress, children }: Section
           paddingHorizontal: spacing.md,
         }}
       >
-        <Text style={[typography.heading, { color: colors.text }]}>{title}</Text>
+        <Text style={[typography.sectionTitle, { color: colors.text }]}>{title}</Text>
         {actionLabel && onActionPress ? (
-          <Pressable accessibilityRole="button" onPress={onActionPress} hitSlop={8}>
-            <Text style={[typography.bodySmall, { color: colors.primary }]}>{actionLabel}</Text>
-          </Pressable>
+          <AnimatedPressable
+            accessibilityRole="button"
+            onPress={onActionPress}
+            hitSlop={8}
+            scaleTo={0.94}
+          >
+            <Text style={[typography.caption, { color: colors.primary }]}>{actionLabel}</Text>
+          </AnimatedPressable>
         ) : null}
       </View>
       {children}

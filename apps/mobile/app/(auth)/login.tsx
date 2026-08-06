@@ -12,7 +12,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { ApiError } from '@/lib/api-client';
 
 export default function LoginScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const setSession = useAuthStore((s) => s.setSession);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ gap: spacing.xxs }}>
-          <Text style={[typography.title, { color: colors.text }]}>Welcome back</Text>
+          <Text style={[typography.screenTitle, { color: colors.text }]}>Welcome back</Text>
           <Text style={[typography.body, { color: colors.textSecondary }]}>
             Log in to continue to Elara.
           </Text>
@@ -68,7 +68,7 @@ export default function LoginScreen() {
           <View
             style={{
               backgroundColor: colors.danger,
-              borderRadius: 10,
+              borderRadius: radius.button,
               padding: spacing.sm,
             }}
           >

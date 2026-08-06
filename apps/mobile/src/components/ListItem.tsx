@@ -1,11 +1,13 @@
-import { Pressable, View, Text, type GestureResponderEvent } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, type GestureResponderEvent } from 'react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { useTheme } from '@/theme/useTheme';
+import { AnimatedPressable } from './AnimatedPressable';
+import type { IconType } from './icon-type';
 
 export interface ListItemProps {
   title: string;
   subtitle?: string;
-  leadingIcon?: keyof typeof Ionicons.glyphMap;
+  leadingIcon?: IconType;
   trailing?: React.ReactNode;
   showChevron?: boolean;
   onPress?: (event: GestureResponderEvent) => void;
@@ -14,7 +16,7 @@ export interface ListItemProps {
 export function ListItem({
   title,
   subtitle,
-  leadingIcon,
+  leadingIcon: LeadingIcon,
   trailing,
   showChevron = false,
   onPress,
@@ -32,7 +34,9 @@ export function ListItem({
         gap: spacing.sm,
       }}
     >
-      {leadingIcon ? <Ionicons name={leadingIcon} size={22} color={colors.textSecondary} /> : null}
+      {LeadingIcon ? (
+        <LeadingIcon size={20} color={colors.textSecondary} strokeWidth={1.75} />
+      ) : null}
       <View style={{ flex: 1 }}>
         <Text style={[typography.body, { color: colors.text }]} numberOfLines={1}>
           {title}
@@ -45,7 +49,7 @@ export function ListItem({
       </View>
       {trailing}
       {showChevron ? (
-        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+        <ChevronRight size={18} color={colors.textTertiary} strokeWidth={1.75} />
       ) : null}
     </View>
   );
@@ -53,12 +57,8 @@ export function ListItem({
   if (!onPress) return content;
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-    >
+    <AnimatedPressable accessibilityRole="button" onPress={onPress} scaleTo={0.98}>
       {content}
-    </Pressable>
+    </AnimatedPressable>
   );
 }

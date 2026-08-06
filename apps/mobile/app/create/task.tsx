@@ -4,6 +4,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router, Stack } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
+import { X } from 'lucide-react-native';
 import {
   createTaskSchema,
   priorityEnum,
@@ -41,7 +42,7 @@ const RECURRENCE_LABELS: Record<RecurrenceFreq, string> = {
 };
 
 export default function CreateTaskScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -105,7 +106,13 @@ export default function CreateTaskScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {submitError ? (
-          <View style={{ backgroundColor: colors.danger, borderRadius: 10, padding: spacing.sm }}>
+          <View
+            style={{
+              backgroundColor: colors.danger,
+              borderRadius: radius.button,
+              padding: spacing.sm,
+            }}
+          >
             <Text style={[typography.bodySmall, { color: colors.textInverse }]}>{submitError}</Text>
           </View>
         ) : null}
@@ -155,7 +162,7 @@ export default function CreateTaskScreen() {
             )}
           />
           <View style={{ gap: spacing.xxs }}>
-            <Text style={[typography.label, { color: colors.text }]}>Priority</Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>Priority</Text>
             <Controller
               control={control}
               name="priority"
@@ -175,7 +182,7 @@ export default function CreateTaskScreen() {
           </View>
 
           <View style={{ gap: spacing.xxs }}>
-            <Text style={[typography.label, { color: colors.text }]}>Due date</Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>Due date</Text>
             <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
               {DUE_DATE_OPTIONS.map((option) => (
                 <Chip
@@ -189,7 +196,7 @@ export default function CreateTaskScreen() {
           </View>
 
           <View style={{ gap: spacing.xxs }}>
-            <Text style={[typography.label, { color: colors.text }]}>Repeat</Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>Repeat</Text>
             <Controller
               control={control}
               name="recurrence"
@@ -209,7 +216,7 @@ export default function CreateTaskScreen() {
           </View>
 
           <View style={{ gap: spacing.xxs }}>
-            <Text style={[typography.label, { color: colors.text }]}>Subtasks</Text>
+            <Text style={[typography.caption, { color: colors.textSecondary }]}>Subtasks</Text>
             {fields.map((field, index) => (
               <View
                 key={field.id}
@@ -230,7 +237,7 @@ export default function CreateTaskScreen() {
                   )}
                 />
                 <IconButton
-                  name="close"
+                  icon={X}
                   accessibilityLabel="Remove subtask"
                   onPress={() => remove(index)}
                 />

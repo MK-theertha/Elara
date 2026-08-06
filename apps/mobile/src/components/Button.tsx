@@ -1,5 +1,7 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, type PressableProps } from 'react-native';
 import { useTheme } from '@/theme/useTheme';
+import { AnimatedPressable } from './AnimatedPressable';
+import type { IconType } from './icon-type';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'md' | 'sm';
@@ -10,6 +12,7 @@ export interface ButtonProps extends Omit<PressableProps, 'children' | 'style'> 
   size?: ButtonSize;
   loading?: boolean;
   fullWidth?: boolean;
+  icon?: IconType;
 }
 
 export function Button({
@@ -18,6 +21,7 @@ export function Button({
   size = 'md',
   loading = false,
   fullWidth = false,
+  icon: Icon,
   disabled,
   ...pressableProps
 }: ButtonProps) {
@@ -38,19 +42,21 @@ export function Button({
   };
 
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
-      style={({ pressed }) => [
+      scaleTo={0.97}
+      style={[
         styles.base,
         {
           backgroundColor: backgroundColor[variant],
-          borderRadius: radius.md,
-          paddingVertical: size === 'sm' ? spacing.xs : spacing.sm,
+          borderRadius: radius.button,
+          paddingVertical: size === 'sm' ? spacing.xs : spacing.sm + 2,
           paddingHorizontal: size === 'sm' ? spacing.md : spacing.lg,
-          opacity: isDisabled ? 0.5 : pressed ? 0.85 : 1,
+          opacity: isDisabled ? 0.5 : 1,
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
+          gap: spacing.xxs,
         },
       ]}
       {...pressableProps}
@@ -58,14 +64,17 @@ export function Button({
       {loading ? (
         <ActivityIndicator size="small" color={textColor[variant]} />
       ) : (
-        <Text
-          style={[typography.subheading, { color: textColor[variant], textAlign: 'center' }]}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
+        <>
+          {Icon ? <Icon size={18} color={textColor[variant]} strokeWidth={2} /> : null}
+          <Text
+            style={[typography.bodyMedium, { color: textColor[variant], textAlign: 'center' }]}
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+        </>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -74,6 +83,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
+    minHeight: 48,
   },
 });

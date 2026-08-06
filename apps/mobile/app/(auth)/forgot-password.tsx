@@ -10,7 +10,7 @@ import { Button, TextInput } from '@/components';
 import { authApi } from '@/features/auth/api';
 
 export default function ForgotPasswordScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
@@ -53,7 +53,7 @@ export default function ForgotPasswordScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ gap: spacing.xxs }}>
-          <Text style={[typography.title, { color: colors.text }]}>Reset your password</Text>
+          <Text style={[typography.screenTitle, { color: colors.text }]}>Reset your password</Text>
           <Text style={[typography.body, { color: colors.textSecondary }]}>
             Enter your email and we&apos;ll send you a link to reset your password.
           </Text>
@@ -63,7 +63,7 @@ export default function ForgotPasswordScreen() {
           <View
             style={{
               backgroundColor: colors.backgroundSecondary,
-              borderRadius: 10,
+              borderRadius: radius.button,
               padding: spacing.md,
             }}
           >

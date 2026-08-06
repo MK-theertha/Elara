@@ -1,5 +1,5 @@
 import { View, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { AlertCircle } from 'lucide-react-native';
 import { useTheme } from '@/theme/useTheme';
 import { Button } from './Button';
 
@@ -28,8 +28,20 @@ export function ErrorState({
         gap: spacing.xs,
       }}
     >
-      <Ionicons name="alert-circle-outline" size={40} color={colors.danger} />
-      <Text style={[typography.subheading, { color: colors.text, textAlign: 'center' }]}>
+      <View
+        style={{
+          width: 76,
+          height: 76,
+          borderRadius: 38,
+          backgroundColor: `${colors.danger}12`,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.xs,
+        }}
+      >
+        <AlertCircle size={32} color={colors.danger} strokeWidth={1.5} />
+      </View>
+      <Text style={[typography.sectionTitle, { color: colors.text, textAlign: 'center' }]}>
         {title}
       </Text>
       {description ? (

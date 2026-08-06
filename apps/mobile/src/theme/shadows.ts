@@ -9,21 +9,33 @@ type ShadowStyle = {
   elevation?: number;
 };
 
-export function createShadows(colors: ThemeColors): Record<'sm' | 'md' | 'lg', ShadowStyle> {
-  const base = (offset: number, opacity: number, radius: number, elevation: number): ShadowStyle =>
+/** Soft, low-contrast elevation — the "expensive" look comes from large blur radius at low
+ * opacity rather than hard, dark drop shadows. */
+export function createShadows(
+  colors: ThemeColors,
+  isDark: boolean,
+): Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', ShadowStyle> {
+  const base = (
+    offset: number,
+    opacity: number,
+    blurRadius: number,
+    elevation: number,
+  ): ShadowStyle =>
     Platform.select({
       android: { elevation },
       default: {
         shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: offset },
-        shadowOpacity: opacity,
-        shadowRadius: radius,
+        shadowOpacity: isDark ? opacity * 1.6 : opacity,
+        shadowRadius: blurRadius,
       },
     }) as ShadowStyle;
 
   return {
-    sm: base(1, 0.06, 3, 2),
-    md: base(2, 0.08, 8, 4),
-    lg: base(4, 0.12, 16, 8),
+    xs: base(1, 0.04, 3, 1),
+    sm: base(2, 0.05, 8, 3),
+    md: base(6, 0.06, 16, 6),
+    lg: base(12, 0.08, 28, 10),
+    xl: base(20, 0.1, 40, 16),
   };
 }

@@ -13,11 +13,11 @@ export function Badge({ label, tone = 'neutral' }: BadgeProps) {
 
   const toneColors: Record<BadgeTone, { bg: string; fg: string }> = {
     neutral: { bg: colors.backgroundSecondary, fg: colors.textSecondary },
-    primary: { bg: colors.primary, fg: colors.onPrimary },
-    danger: { bg: colors.danger, fg: colors.onPrimary },
-    warning: { bg: colors.warning, fg: colors.onPrimary },
-    success: { bg: colors.success, fg: colors.onPrimary },
-    info: { bg: colors.info, fg: colors.onPrimary },
+    primary: { bg: `${colors.primary}1A`, fg: colors.primary },
+    danger: { bg: `${colors.danger}1A`, fg: colors.danger },
+    warning: { bg: `${colors.warning}1A`, fg: colors.warning },
+    success: { bg: `${colors.success}1A`, fg: colors.success },
+    info: { bg: `${colors.info}1A`, fg: colors.info },
   };
   const { bg, fg } = toneColors[tone];
 
@@ -25,7 +25,7 @@ export function Badge({ label, tone = 'neutral' }: BadgeProps) {
     <View
       style={{
         backgroundColor: bg,
-        borderRadius: radius.full,
+        borderRadius: radius.chip,
         paddingHorizontal: spacing.xs,
         paddingVertical: 3,
         alignSelf: 'flex-start',

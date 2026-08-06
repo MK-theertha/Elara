@@ -11,7 +11,7 @@ import { authApi } from '@/features/auth/api';
 import { ApiError } from '@/lib/api-client';
 
 export default function ResetPasswordScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const { token: tokenParam } = useLocalSearchParams<{ token?: string }>();
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -57,7 +57,7 @@ export default function ResetPasswordScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ gap: spacing.xxs }}>
-          <Text style={[typography.title, { color: colors.text }]}>Set a new password</Text>
+          <Text style={[typography.screenTitle, { color: colors.text }]}>Set a new password</Text>
           <Text style={[typography.body, { color: colors.textSecondary }]}>
             Paste the reset link&apos;s token and choose a new password.
           </Text>
@@ -67,7 +67,7 @@ export default function ResetPasswordScreen() {
           <View
             style={{
               backgroundColor: colors.backgroundSecondary,
-              borderRadius: 10,
+              borderRadius: radius.button,
               padding: spacing.md,
               gap: spacing.sm,
             }}
@@ -81,7 +81,11 @@ export default function ResetPasswordScreen() {
           <>
             {submitError ? (
               <View
-                style={{ backgroundColor: colors.danger, borderRadius: 10, padding: spacing.sm }}
+                style={{
+                  backgroundColor: colors.danger,
+                  borderRadius: radius.button,
+                  padding: spacing.sm,
+                }}
               >
                 <Text style={[typography.bodySmall, { color: colors.textInverse }]}>
                   {submitError}

@@ -1,35 +1,35 @@
 import { useState } from 'react';
 import { ScrollView, View, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import {
+  BarChart3,
+  ChevronRight,
+  LogOut,
+  Settings as SettingsIcon,
+  Sparkles,
+  ShoppingCart,
+  StickyNote,
+} from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/useTheme';
-import { Avatar, Card, ListItem, ScreenHeader, Section } from '@/components';
-import { useToastStore } from '@/stores/toast-store';
+import { AnimatedPressable, Avatar, Card, ListItem, ScreenHeader, Section } from '@/components';
 import { useAuthStore } from '@/stores/auth-store';
 import { authApi } from '@/features/auth/api';
 
-const SETTINGS_ITEMS: { label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { label: 'Profile', icon: 'person-outline' },
-  { label: 'Notifications', icon: 'notifications-outline' },
-  { label: 'Appearance', icon: 'color-palette-outline' },
-  { label: 'Language', icon: 'language-outline' },
-  { label: 'Timezone', icon: 'time-outline' },
-  { label: 'Currency', icon: 'cash-outline' },
-  { label: 'Security', icon: 'lock-closed-outline' },
-  { label: 'Data & Privacy', icon: 'shield-checkmark-outline' },
-  { label: 'About Elara', icon: 'information-circle-outline' },
+const WORKSPACE_ITEMS = [
+  { label: 'Notes', icon: StickyNote, route: '/(tabs)/more/notes' as const },
+  { label: 'Shopping Lists', icon: ShoppingCart, route: '/(tabs)/more/shopping' as const },
+  { label: 'Analytics', icon: BarChart3, route: '/(tabs)/more/analytics' as const },
+  { label: 'AI Assistant', icon: Sparkles, route: '/ai' as const },
 ];
 
 export default function MoreScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, typography, radius } = useTheme();
   const insets = useSafeAreaInsets();
-  const showToast = useToastStore((s) => s.show);
   const user = useAuthStore((s) => s.user);
   const refreshToken = useAuthStore((s) => s.refreshToken);
   const clearSession = useAuthStore((s) => s.clearSession);
   const [loggingOut, setLoggingOut] = useState(false);
-
-  const notImplemented = (label: string) => showToast(`${label} is coming in a later phase`);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -48,7 +48,7 @@ export default function MoreScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{
         paddingTop: insets.top,
-        paddingBottom: spacing.xxxl,
+        paddingBottom: insets.bottom + 140,
         gap: spacing.lg,
       }}
     >
@@ -56,56 +56,64 @@ export default function MoreScreen() {
 
       {user ? (
         <View style={{ paddingHorizontal: spacing.md }}>
-          <Card>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <Avatar name={user.name ?? user.email} size={48} />
-              <View style={{ flex: 1 }}>
-                <Text style={[typography.subheading, { color: colors.text }]} numberOfLines={1}>
-                  {user.name ?? 'Welcome'}
-                </Text>
-                <Text
-                  style={[typography.bodySmall, { color: colors.textSecondary }]}
-                  numberOfLines={1}
-                >
-                  {user.email}
-                </Text>
-              </View>
+          <AnimatedPressable
+            accessibilityRole="button"
+            onPress={() => router.push('/(tabs)/more/profile')}
+            scaleTo={0.98}
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: radius.card,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: spacing.md,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.sm,
+            }}
+          >
+            <Avatar name={user.name ?? user.email} size={52} ring />
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.cardTitle, { color: colors.text }]} numberOfLines={1}>
+                {user.name ?? 'Welcome'}
+              </Text>
+              <Text
+                style={[typography.bodySmall, { color: colors.textSecondary }]}
+                numberOfLines={1}
+              >
+                {user.email}
+              </Text>
             </View>
-          </Card>
+            <ChevronRight size={18} color={colors.textTertiary} strokeWidth={1.75} />
+          </AnimatedPressable>
         </View>
       ) : null}
 
-      <Section title="Your Data">
+      <Section title="Workspace">
         <View style={{ paddingHorizontal: spacing.md }}>
           <Card padded={false}>
-            <ListItem
-              title="Notes"
-              leadingIcon="document-text-outline"
-              showChevron
-              onPress={() => notImplemented('Notes')}
-            />
-            <ListItem
-              title="Shopping Lists"
-              leadingIcon="cart-outline"
-              showChevron
-              onPress={() => notImplemented('Shopping lists')}
-            />
-          </Card>
-        </View>
-      </Section>
-
-      <Section title="Settings">
-        <View style={{ paddingHorizontal: spacing.md }}>
-          <Card padded={false}>
-            {SETTINGS_ITEMS.map((item) => (
+            {WORKSPACE_ITEMS.map((item) => (
               <ListItem
                 key={item.label}
                 title={item.label}
                 leadingIcon={item.icon}
                 showChevron
-                onPress={() => notImplemented(item.label)}
+                onPress={() => router.push(item.route)}
               />
             ))}
+          </Card>
+        </View>
+      </Section>
+
+      <Section title="Preferences">
+        <View style={{ paddingHorizontal: spacing.md }}>
+          <Card padded={false}>
+            <ListItem
+              title="Settings"
+              subtitle="Appearance, notifications, security"
+              leadingIcon={SettingsIcon}
+              showChevron
+              onPress={() => router.push('/(tabs)/more/settings')}
+            />
           </Card>
         </View>
       </Section>
@@ -114,7 +122,7 @@ export default function MoreScreen() {
         <Card padded={false}>
           <ListItem
             title={loggingOut ? 'Logging out...' : 'Logout'}
-            leadingIcon="log-out-outline"
+            leadingIcon={LogOut}
             onPress={loggingOut ? undefined : handleLogout}
           />
         </Card>
