@@ -2,15 +2,8 @@ const palette = {
   white: '#FFFFFF',
   black: '#000000',
 
-  gray50: '#F8F9FC',
-  gray100: '#F1F2F8',
-  gray200: '#E7E9F3',
-  gray300: '#D8DBE8',
   gray400: '#9CA3AF',
-  gray500: '#6B7280',
   gray600: '#4B5264',
-  gray700: '#374151',
-  gray800: '#1F2330',
   gray900: '#111827',
 
   ink950: '#0F1115',
@@ -19,9 +12,7 @@ const palette = {
   ink700: '#20242D',
   ink600: '#2B303C',
 
-  indigo400: '#7B7FF2',
   indigo500: '#5B5FEF',
-  indigo600: '#4A4DD1',
   indigo700: '#6D71F2',
 
   violet500: '#7B61FF',
@@ -32,37 +23,8 @@ const palette = {
   blue500: '#0A84FF',
 };
 
-export const lightColors = {
-  background: palette.gray50,
-  backgroundSecondary: palette.gray100,
-  surface: palette.white,
-  surfaceElevated: palette.white,
-  border: 'rgba(17, 24, 39, 0.06)',
-  borderStrong: 'rgba(17, 24, 39, 0.12)',
-
-  text: palette.gray900,
-  textSecondary: palette.gray500,
-  textTertiary: palette.gray400,
-  textInverse: palette.white,
-
-  primary: palette.indigo500,
-  primaryPressed: palette.indigo600,
-  accent: palette.violet500,
-  onPrimary: palette.white,
-
-  danger: palette.red500,
-  dangerPressed: '#E0342A',
-  warning: palette.amber500,
-  success: palette.green500,
-  info: palette.blue500,
-
-  overlay: 'rgba(15, 17, 21, 0.45)',
-  shadow: palette.gray900,
-  skeletonBase: palette.gray200,
-  skeletonHighlight: palette.gray100,
-};
-
-export const darkColors: typeof lightColors = {
+/** Elara is dark-only by design — there is no light palette to switch to. */
+export const darkColors = {
   background: palette.ink950,
   backgroundSecondary: palette.ink900,
   surface: palette.ink800,
@@ -105,5 +67,5 @@ export const categoryColors = {
   teal: '#12B7A8',
 } as const;
 
-export type ThemeColors = typeof lightColors;
+export type ThemeColors = typeof darkColors;
 export type CategoryColorKey = keyof typeof categoryColors;

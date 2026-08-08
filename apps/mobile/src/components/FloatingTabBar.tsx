@@ -55,7 +55,7 @@ const TABS: TabDef[] = [
  * tab from the router pathname rather than react-navigation's tabBar render-prop, keeping
  * this independent of expo-router's internal navigator typing. */
 export function FloatingTabBar() {
-  const { colors, spacing, typography, shadows, isDark } = useTheme();
+  const { colors, spacing, typography, shadows } = useTheme();
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
   const [barWidth, setBarWidth] = useState(0);
@@ -84,14 +84,14 @@ export function FloatingTabBar() {
       }}
     >
       <View style={[{ borderRadius: 32, overflow: 'hidden' }, shadows.lg]}>
-        <BlurView intensity={50} tint={isDark ? 'dark' : 'light'}>
+        <BlurView intensity={50} tint="dark">
           <View
             onLayout={handleLayout}
             style={{
               flexDirection: 'row',
               paddingVertical: spacing.xs,
               paddingHorizontal: spacing.xs,
-              backgroundColor: isDark ? 'rgba(26, 29, 36, 0.72)' : 'rgba(255, 255, 255, 0.78)',
+              backgroundColor: 'rgba(26, 29, 36, 0.72)',
               borderWidth: 1,
               borderColor: colors.border,
             }}

@@ -14,20 +14,10 @@ import {
   Zap,
 } from 'lucide-react-native';
 import { useTheme } from '@/theme/useTheme';
-import {
-  Avatar,
-  Card,
-  IconButton,
-  ListItem,
-  ScreenHeader,
-  Section,
-  SegmentedControl,
-  StatTile,
-} from '@/components';
+import { Avatar, Card, IconButton, ListItem, ScreenHeader, Section, StatTile } from '@/components';
 import { useAuthStore } from '@/stores/auth-store';
 import { useToastStore } from '@/stores/toast-store';
 import { tasksApi } from '@/features/tasks/api';
-import type { ThemeMode } from '@/stores/theme-store';
 import { usePreferencesStore } from '@/stores/preferences-store';
 import { exportLocalBackup, formatRelativeBackup } from '@/lib/backup';
 
@@ -38,14 +28,8 @@ const ACHIEVEMENTS = [
   { icon: Award, label: 'Power user', unlocked: false, color: '#7B61FF' },
 ];
 
-const THEME_OPTIONS: { label: string; value: ThemeMode }[] = [
-  { label: 'Light', value: 'light' },
-  { label: 'Dark', value: 'dark' },
-  { label: 'System', value: 'system' },
-];
-
 export default function ProfileScreen() {
-  const { colors, spacing, radius, typography, mode, setMode } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const showToast = useToastStore((s) => s.show);
   const user = useAuthStore((s) => s.user);
@@ -155,12 +139,6 @@ export default function ProfileScreen() {
               </View>
             ))}
           </ScrollView>
-        </Section>
-
-        <Section title="Appearance">
-          <View style={{ paddingHorizontal: spacing.md }}>
-            <SegmentedControl options={THEME_OPTIONS} value={mode} onChange={setMode} />
-          </View>
         </Section>
 
         <Section title="Data">

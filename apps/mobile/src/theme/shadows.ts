@@ -9,11 +9,10 @@ type ShadowStyle = {
   elevation?: number;
 };
 
-/** Soft, low-contrast elevation — the "expensive" look comes from large blur radius at low
- * opacity rather than hard, dark drop shadows. */
+/** Soft, low-contrast elevation, tuned for the dark surface — the "expensive" look comes
+ * from large blur radius at low opacity rather than hard drop shadows. */
 export function createShadows(
   colors: ThemeColors,
-  isDark: boolean,
 ): Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', ShadowStyle> {
   const base = (
     offset: number,
@@ -26,7 +25,7 @@ export function createShadows(
       default: {
         shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: offset },
-        shadowOpacity: isDark ? opacity * 1.6 : opacity,
+        shadowOpacity: opacity * 1.6,
         shadowRadius: blurRadius,
       },
     }) as ShadowStyle;

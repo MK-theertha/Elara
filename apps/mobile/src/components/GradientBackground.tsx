@@ -16,14 +16,12 @@ export function GradientBackground({
   style,
   variant = 'brand',
 }: GradientBackgroundProps) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const gradientColors =
     variant === 'brand'
       ? ([colors.primary, colors.accent] as const)
-      : isDark
-        ? (['rgba(91,95,239,0.16)', 'rgba(123,97,255,0.05)'] as const)
-        : (['rgba(91,95,239,0.10)', 'rgba(123,97,255,0.03)'] as const);
+      : (['rgba(91,95,239,0.16)', 'rgba(123,97,255,0.05)'] as const);
 
   return (
     <LinearGradient

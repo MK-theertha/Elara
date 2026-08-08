@@ -14,7 +14,7 @@ import {
 } from '@elara/validation';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { Public } from '../common/decorators/public.decorator';
-import type { AuthService} from './auth.service';
+import type { AuthService } from './auth.service';
 import { type AuthResult } from './auth.service';
 
 @Controller('auth')

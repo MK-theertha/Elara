@@ -54,8 +54,8 @@ async function persist(state: Preferences): Promise<void> {
 }
 
 /** Session-persisted app preferences — language/timezone/currency, notification toggles,
- * biometric-lock opt-in, and last-backup timestamp. Mirrors the theme-store pattern
- * (SecureStore-backed, hydrated once at root). */
+ * biometric-lock opt-in, and last-backup timestamp. SecureStore-backed, hydrated once at
+ * root, same pattern as auth-store. */
 export const usePreferencesStore = create<PreferencesState>((set, get) => ({
   ...DEFAULT_PREFERENCES,
 

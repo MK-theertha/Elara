@@ -9,22 +9,12 @@ import {
   Fingerprint,
   Globe,
   Info,
-  Palette,
   Shield,
   Wallet,
 } from 'lucide-react-native';
 import { useTheme } from '@/theme/useTheme';
-import {
-  Card,
-  IconButton,
-  ListItem,
-  ScreenHeader,
-  SearchBar,
-  SegmentedControl,
-  Toggle,
-} from '@/components';
+import { Card, IconButton, ListItem, ScreenHeader, SearchBar, Toggle } from '@/components';
 import { useToastStore } from '@/stores/toast-store';
-import type { ThemeMode } from '@/stores/theme-store';
 import type { IconType } from '@/components/icon-type';
 import { usePreferencesStore } from '@/stores/preferences-store';
 import { getBiometricAvailability, authenticate } from '@/lib/biometrics';
@@ -36,12 +26,6 @@ import {
 } from '@/lib/notifications';
 import { exportLocalBackup, formatRelativeBackup } from '@/lib/backup';
 import { LANGUAGE_OPTIONS } from '@/lib/preference-options';
-
-const THEME_OPTIONS: { label: string; value: ThemeMode }[] = [
-  { label: 'Light', value: 'light' },
-  { label: 'Dark', value: 'dark' },
-  { label: 'System', value: 'system' },
-];
 
 interface NavRow {
   kind: 'nav';
@@ -61,7 +45,7 @@ interface ToggleRow {
 type Row = NavRow | ToggleRow;
 
 export default function SettingsScreen() {
-  const { colors, spacing, typography, mode, setMode } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const showToast = useToastStore((s) => s.show);
   const [query, setQuery] = useState('');
   const [backingUp, setBackingUp] = useState(false);
@@ -283,23 +267,6 @@ export default function SettingsScreen() {
         <View style={{ paddingHorizontal: spacing.md }}>
           <SearchBar value={query} onChangeText={setQuery} placeholder="Search settings" />
         </View>
-
-        {query.length === 0 ? (
-          <View style={{ paddingHorizontal: spacing.md, gap: spacing.sm }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.xs,
-                paddingHorizontal: spacing.xs,
-              }}
-            >
-              <Palette size={14} color={colors.textSecondary} strokeWidth={1.75} />
-              <Text style={[typography.caption, { color: colors.textSecondary }]}>Appearance</Text>
-            </View>
-            <SegmentedControl options={THEME_OPTIONS} value={mode} onChange={setMode} />
-          </View>
-        ) : null}
 
         {filteredSections.map((section) => (
           <View key={section.title} style={{ gap: spacing.sm }}>

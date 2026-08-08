@@ -13,7 +13,7 @@ export interface AppModalProps {
 /** Centered modal with a blurred backdrop — confirmation dialogs, small pickers. Larger
  * flows (quick add, filters) should use BottomSheet instead. */
 export function AppModal({ visible, onClose, children }: AppModalProps) {
-  const { colors, spacing, radius, shadows, isDark } = useTheme();
+  const { colors, spacing, radius, shadows } = useTheme();
 
   if (!visible) return null;
 
@@ -27,7 +27,7 @@ export function AppModal({ visible, onClose, children }: AppModalProps) {
         >
           <BlurView
             intensity={30}
-            tint={isDark ? 'dark' : 'light'}
+            tint="dark"
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           />
           <Animated.View entering={ZoomIn} exiting={ZoomOut}>

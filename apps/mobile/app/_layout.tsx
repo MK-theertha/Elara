@@ -56,7 +56,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 function AppShell() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const hydratePreferences = usePreferencesStore((s) => s.hydrate);
 
   useEffect(() => {
@@ -66,7 +66,7 @@ function AppShell() {
   return (
     <QueryClientProvider client={queryClient}>
       <BottomSheetModalProvider>
-        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <StatusBar style="light" />
         <AuthGate>
           <Stack
             screenOptions={{
