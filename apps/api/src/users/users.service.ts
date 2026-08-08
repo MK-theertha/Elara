@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { UpdateUserInput, UpdateUserPreferencesInput, UserDto } from '@elara/validation';
-import type { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { toUserDto } from './users.serializer';
 
 @Injectable()

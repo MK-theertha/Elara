@@ -8,7 +8,7 @@ import {
 } from '@elara/validation';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator';
-import type { UsersService } from './users.service';
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {

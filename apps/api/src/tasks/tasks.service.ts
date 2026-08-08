@@ -9,7 +9,7 @@ import type {
   UpdateSubtaskInput,
   UpdateTaskInput,
 } from '@elara/validation';
-import type { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { toTaskDto, toSubtaskDto } from './tasks.serializer';
 
 @Injectable()

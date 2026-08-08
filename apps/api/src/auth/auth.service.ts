@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import type { JwtService } from '@nestjs/jwt';
-import type { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import type ms from 'ms';
 import type {
@@ -12,7 +12,7 @@ import type {
   ResetPasswordInput,
   UserDto,
 } from '@elara/validation';
-import type { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { toUserDto } from '../users/users.serializer';
 import { expiryDateFromNow } from './token.util';
 

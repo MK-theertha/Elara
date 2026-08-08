@@ -27,7 +27,7 @@ import {
 } from '@elara/validation';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { CurrentUser, type AuthenticatedUser } from '../common/decorators/current-user.decorator';
-import type { TasksService } from './tasks.service';
+import { TasksService } from './tasks.service';
 
 @Controller('tasks')
 export class TasksController {
