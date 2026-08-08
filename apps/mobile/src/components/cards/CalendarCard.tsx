@@ -2,6 +2,8 @@ import { View, Text } from 'react-native';
 import { MapPin } from 'lucide-react-native';
 import { useTheme } from '@/theme/useTheme';
 import { categoryColors, type CategoryColorKey } from '@/theme/colors';
+import { usePreferencesStore } from '@/stores/preferences-store';
+import { formatTimeInZone } from '@/lib/format-datetime';
 import { AnimatedPressable } from '../AnimatedPressable';
 
 export interface CalendarCardProps {
@@ -15,8 +17,9 @@ export interface CalendarCardProps {
 
 export function CalendarCard({ title, start, end, color, location, onPress }: CalendarCardProps) {
   const { colors, spacing, radius, typography } = useTheme();
+  const timezone = usePreferencesStore((s) => s.timezone);
   const tint = categoryColors[color];
-  const timeLabel = `${start.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })} – ${end.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+  const timeLabel = `${formatTimeInZone(start, timezone)} – ${formatTimeInZone(end, timezone)}`;
 
   return (
     <AnimatedPressable

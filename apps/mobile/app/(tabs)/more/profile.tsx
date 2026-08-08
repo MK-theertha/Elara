@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ScrollView, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
@@ -27,6 +28,8 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useToastStore } from '@/stores/toast-store';
 import { tasksApi } from '@/features/tasks/api';
 import type { ThemeMode } from '@/stores/theme-store';
+import { usePreferencesStore } from '@/stores/preferences-store';
+import { exportLocalBackup, formatRelativeBackup } from '@/lib/backup';
 
 const ACHIEVEMENTS = [
   { icon: Flame, label: '7-day streak', unlocked: true, color: '#FF9F0A' },
@@ -46,13 +49,26 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const showToast = useToastStore((s) => s.show);
   const user = useAuthStore((s) => s.user);
+  const lastBackupAt = usePreferencesStore((s) => s.lastBackupAt);
+  const markBackedUp = usePreferencesStore((s) => s.markBackedUp);
+  const [backingUp, setBackingUp] = useState(false);
 
   const { data: completedTasks } = useQuery({
     queryKey: ['tasks', 'Completed'],
     queryFn: () => tasksApi.list({ view: 'completed' }),
   });
 
-  const notImplemented = (label: string) => showToast(`${label} is coming in a later phase`);
+  const handleBackup = async () => {
+    setBackingUp(true);
+    try {
+      await exportLocalBackup();
+      markBackedUp();
+    } catch {
+      showToast("Couldn't export backup", 'danger');
+    } finally {
+      setBackingUp(false);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -151,25 +167,25 @@ export default function ProfileScreen() {
           <View style={{ paddingHorizontal: spacing.md }}>
             <Card padded={false}>
               <ListItem
-                title="Backup"
-                subtitle="Last backup: never"
+                title={backingUp ? 'Backing up…' : 'Backup'}
+                subtitle={formatRelativeBackup(lastBackupAt)}
                 leadingIcon={DatabaseBackup}
                 showChevron
-                onPress={() => notImplemented('Backup')}
+                onPress={handleBackup}
               />
               <ListItem
                 title="Sync"
-                subtitle="Off"
+                subtitle="Tasks & events sync automatically when signed in"
                 leadingIcon={Cloud}
                 showChevron
-                onPress={() => notImplemented('Sync')}
+                onPress={() => showToast('Notes and shopping lists stay on-device for now')}
               />
               <ListItem
                 title="Security"
                 subtitle="Password, biometrics"
                 leadingIcon={Shield}
                 showChevron
-                onPress={() => notImplemented('Security')}
+                onPress={() => router.push('/(tabs)/more/settings')}
               />
             </Card>
           </View>

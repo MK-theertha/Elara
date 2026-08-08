@@ -18,6 +18,8 @@ import { Button, Chip, IconButton, TextInput } from '@/components';
 import { tasksApi } from '@/features/tasks/api';
 import { useToastStore } from '@/stores/toast-store';
 import { ApiError } from '@/lib/api-client';
+import { usePreferencesStore } from '@/stores/preferences-store';
+import { scheduleTaskReminder } from '@/lib/notifications';
 import {
   DUE_DATE_OPTIONS,
   dueDateOptionToIso,
@@ -45,6 +47,7 @@ export default function CreateTaskScreen() {
   const { colors, spacing, radius, typography } = useTheme();
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
+  const taskRemindersEnabled = usePreferencesStore((s) => s.notifications.taskReminders);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -78,13 +81,16 @@ export default function CreateTaskScreen() {
     setSubmitError(null);
     setSubmitting(true);
     try {
-      await tasksApi.create({
+      const task = await tasksApi.create({
         ...input,
         notes: input.notes || undefined,
         category: input.category || undefined,
         subtasks: input.subtasks?.filter((subtask) => subtask.title.trim().length > 0),
       });
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      if (taskRemindersEnabled && task.dueDate) {
+        scheduleTaskReminder(task.id, task.title, task.dueDate).catch(() => {});
+      }
       showToast('Task created', 'success');
       router.back();
     } catch (err) {

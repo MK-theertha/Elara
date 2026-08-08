@@ -35,9 +35,11 @@ import {
 import { TaskCard } from '@/components/cards';
 import { useAuthStore } from '@/stores/auth-store';
 import { useHomeLayoutStore, type HomeWidgetKey } from '@/stores/home-layout-store';
+import { usePreferencesStore } from '@/stores/preferences-store';
 import { tasksApi } from '@/features/tasks/api';
 import { useToastStore } from '@/stores/toast-store';
 import { ApiError } from '@/lib/api-client';
+import { formatTimeInZone } from '@/lib/format-datetime';
 
 function WidgetHeader({
   title,
@@ -88,6 +90,8 @@ export default function HomeScreen() {
   const showToast = useToastStore((s) => s.show);
   const user = useAuthStore((s) => s.user);
   const firstName = user?.name?.split(' ')[0];
+  const currency = usePreferencesStore((s) => s.currency);
+  const timezone = usePreferencesStore((s) => s.timezone);
 
   const order = useHomeLayoutStore((s) => s.order);
   const setOrder = useHomeLayoutStore((s) => s.setOrder);
@@ -198,10 +202,7 @@ export default function HomeScreen() {
                     style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
                   >
                     <Text style={[typography.caption, { color: colors.textSecondary, width: 56 }]}>
-                      {event.start.toLocaleTimeString(undefined, {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })}
+                      {formatTimeInZone(event.start, timezone)}
                     </Text>
                     <View
                       style={{
@@ -250,7 +251,7 @@ export default function HomeScreen() {
               isActive={isActive}
             />
             <Text style={[typography.screenTitle, { color: colors.text }]}>
-              {formatCurrency(monthTotal, 'USD')}
+              {formatCurrency(monthTotal, currency)}
             </Text>
             <Text style={[typography.caption, { color: colors.textSecondary }]}>
               spent this month
@@ -260,7 +261,7 @@ export default function HomeScreen() {
                 <View key={c.key} style={{ flex: 1, gap: 4 }}>
                   <Tag label={c.label.split(' ')[0]!} color={categoryColors[c.color]} />
                   <Text style={[typography.caption, { color: colors.text }]}>
-                    {formatCurrency(c.amount, 'USD')}
+                    {formatCurrency(c.amount, currency)}
                   </Text>
                 </View>
               ))}
@@ -465,7 +466,7 @@ export default function HomeScreen() {
               />
               <StatTile
                 label="This Month"
-                value={formatCurrency(monthTotal, 'USD')}
+                value={formatCurrency(monthTotal, currency)}
                 tint={colors.warning}
                 icon={Wallet}
               />

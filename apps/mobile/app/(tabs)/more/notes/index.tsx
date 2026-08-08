@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import { ScrollView, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Pin, Plus, Star, StickyNote } from 'lucide-react-native';
+import { ChevronLeft, Pin, Plus, Star, StickyNote } from 'lucide-react-native';
 import { useTheme } from '@/theme/useTheme';
 import {
   AnimatedPressable,
   Chip,
   EmptyState,
   FloatingButton,
+  IconButton,
   ScreenHeader,
   SearchBar,
 } from '@/components';
@@ -98,7 +99,12 @@ export default function NotesScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
-      <ScreenHeader title="Notes" />
+      <ScreenHeader
+        title="Notes"
+        accessory={
+          <IconButton icon={ChevronLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+        }
+      />
       <View style={{ paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.sm }}>
         <SearchBar value={query} onChangeText={setQuery} placeholder="Search notes" />
         {folders.length > 0 ? (

@@ -24,7 +24,7 @@ export default function NoteDetailScreen() {
   if (!note) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
-        <Stack.Screen options={{ title: 'Note' }} />
+        <Stack.Screen options={{ title: 'Note', headerShown: true }} />
         <ErrorState title="Note not found" onRetry={() => router.back()} />
       </View>
     );
@@ -60,6 +60,7 @@ export default function NoteDetailScreen() {
       <Stack.Screen
         options={{
           title: 'Note',
+          headerShown: true,
           headerRight: () => (
             <View style={{ flexDirection: 'row', gap: 4 }}>
               <IconButton

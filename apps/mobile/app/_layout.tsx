@@ -15,8 +15,9 @@ import {
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
 import { queryClient } from '@/lib/query-client';
-import { ToastHost, LoadingState } from '@/components';
+import { ToastHost, LoadingState, BiometricLock } from '@/components';
 import { useAuthStore } from '@/stores/auth-store';
+import { usePreferencesStore } from '@/stores/preferences-store';
 import { ThemeProvider, useTheme } from '@/theme/useTheme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -51,11 +52,16 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return isAuthenticated ? <BiometricLock>{children}</BiometricLock> : <>{children}</>;
 }
 
 function AppShell() {
   const { colors, isDark } = useTheme();
+  const hydratePreferences = usePreferencesStore((s) => s.hydrate);
+
+  useEffect(() => {
+    hydratePreferences();
+  }, [hydratePreferences]);
 
   return (
     <QueryClientProvider client={queryClient}>

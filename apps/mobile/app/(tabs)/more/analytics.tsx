@@ -7,6 +7,7 @@ import { useTheme } from '@/theme/useTheme';
 import { IconButton, ScreenHeader, Section, StatTile } from '@/components';
 import { BarChart, PieChart } from '@/components/charts';
 import { categoryColors } from '@/theme/colors';
+import { usePreferencesStore } from '@/stores/preferences-store';
 import {
   getExpenseCategories,
   getMonthlySpendTrend,
@@ -16,6 +17,7 @@ import {
 export default function AnalyticsScreen() {
   const { colors, spacing, radius } = useTheme();
   const insets = useSafeAreaInsets();
+  const currency = usePreferencesStore((s) => s.currency);
 
   const taskTrend = getTaskCompletionTrend();
   const totalCompleted = taskTrend.reduce((sum, d) => sum + d.value, 0);
@@ -68,7 +70,7 @@ export default function AnalyticsScreen() {
           <StatTile label="Day streak" value={7} icon={Flame} tint={colors.warning} />
           <StatTile
             label="Spent this month"
-            value={formatCurrency(monthTotal, 'USD')}
+            value={formatCurrency(monthTotal, currency)}
             icon={TrendingUp}
             tint={colors.info}
           />
@@ -117,7 +119,7 @@ export default function AnalyticsScreen() {
           >
             <PieChart
               data={pieData}
-              centerValue={formatCurrency(monthTotal, 'USD')}
+              centerValue={formatCurrency(monthTotal, currency)}
               centerLabel="total"
             />
           </View>

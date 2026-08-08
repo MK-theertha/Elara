@@ -7,6 +7,7 @@ import { useTheme } from '@/theme/useTheme';
 import { FloatingButton, ScreenHeader, Section, StatTile, Tag } from '@/components';
 import { BarChart, PieChart } from '@/components/charts';
 import { categoryColors } from '@/theme/colors';
+import { usePreferencesStore } from '@/stores/preferences-store';
 import { getExpenseCategories, getMonthlySpendTrend, getRecentTransactions } from '@/lib/mock-data';
 
 const MONTHLY_BUDGET = 2000;
@@ -39,6 +40,7 @@ function ProgressBar({ ratio, color }: { ratio: number; color: string }) {
 export default function ExpensesScreen() {
   const { colors, spacing, radius, typography } = useTheme();
   const insets = useSafeAreaInsets();
+  const currency = usePreferencesStore((s) => s.currency);
 
   const categories = getExpenseCategories();
   const monthTotal = categories.reduce((sum, c) => sum + c.amount, 0);
@@ -65,19 +67,19 @@ export default function ExpensesScreen() {
         <View style={{ gap: 2 }}>
           <Text style={[typography.caption, { color: colors.textSecondary }]}>This month</Text>
           <Text style={[typography.displayLarge, { color: colors.text }]}>
-            {formatCurrency(monthTotal, 'USD')}
+            {formatCurrency(monthTotal, currency)}
           </Text>
         </View>
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
           <StatTile
             label="Avg / day"
-            value={formatCurrency(monthTotal / 30, 'USD')}
+            value={formatCurrency(monthTotal / 30, currency)}
             icon={Receipt}
           />
           <StatTile
             label="vs last month"
-            value={formatCurrency(trend[trend.length - 1]!.value, 'USD')}
+            value={formatCurrency(trend[trend.length - 1]!.value, currency)}
             icon={Target}
             trend={{ value: '+12%', direction: 'up' }}
             tint={colors.warning}
@@ -97,7 +99,7 @@ export default function ExpensesScreen() {
           >
             <PieChart
               data={pieData}
-              centerValue={formatCurrency(monthTotal, 'USD')}
+              centerValue={formatCurrency(monthTotal, currency)}
               centerLabel="total"
             />
           </View>
@@ -133,7 +135,8 @@ export default function ExpensesScreen() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={[typography.bodyMedium, { color: colors.text }]}>Monthly budget</Text>
                 <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  {formatCurrency(monthTotal, 'USD')} / {formatCurrency(MONTHLY_BUDGET, 'USD')}
+                  {formatCurrency(monthTotal, currency)} /{' '}
+                  {formatCurrency(MONTHLY_BUDGET, currency)}
                 </Text>
               </View>
               <ProgressBar
@@ -157,7 +160,8 @@ export default function ExpensesScreen() {
                 <Text style={[typography.bodyMedium, { color: colors.text }]}>Savings goal</Text>
               </View>
               <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                {formatCurrency(SAVINGS_CURRENT, 'USD')} of {formatCurrency(SAVINGS_GOAL, 'USD')}
+                {formatCurrency(SAVINGS_CURRENT, currency)} of{' '}
+                {formatCurrency(SAVINGS_GOAL, currency)}
               </Text>
               <ProgressBar ratio={savingsRatio} color={colors.success} />
             </View>
@@ -190,7 +194,7 @@ export default function ExpensesScreen() {
                   <Tag label={tx.category} color={categoryColors[tx.color]} />
                 </View>
                 <Text style={[typography.bodyMedium, { color: colors.text }]}>
-                  -{formatCurrency(tx.amount, 'USD')}
+                  -{formatCurrency(tx.amount, currency)}
                 </Text>
               </View>
             ))}

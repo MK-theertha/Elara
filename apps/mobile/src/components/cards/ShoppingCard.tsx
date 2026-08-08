@@ -1,7 +1,9 @@
 import { View, Text } from 'react-native';
 import { ShoppingBag } from 'lucide-react-native';
+import { formatCurrency } from '@elara/shared';
 import { useTheme } from '@/theme/useTheme';
 import { categoryColors, type CategoryColorKey } from '@/theme/colors';
+import { usePreferencesStore } from '@/stores/preferences-store';
 import { AnimatedPressable } from '../AnimatedPressable';
 import { ProgressRing } from '../ProgressRing';
 
@@ -25,6 +27,7 @@ export function ShoppingCard({
   onPress,
 }: ShoppingCardProps) {
   const { colors, spacing, radius, typography } = useTheme();
+  const currency = usePreferencesStore((s) => s.currency);
   const tint = categoryColors[color];
   const ratio = totalCount > 0 ? purchasedCount / totalCount : 0;
 
@@ -61,7 +64,7 @@ export function ShoppingCard({
           {name}
         </Text>
         <Text style={[typography.caption, { color: colors.textSecondary }]}>
-          {store} · {purchasedCount}/{totalCount} · ${estimate.toFixed(2)}
+          {store} · {purchasedCount}/{totalCount} · {formatCurrency(estimate, currency)}
         </Text>
       </View>
       <ProgressRing

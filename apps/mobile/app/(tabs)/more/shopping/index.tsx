@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Plus, ShoppingCart } from 'lucide-react-native';
+import { ChevronLeft, Plus, ShoppingCart } from 'lucide-react-native';
 import { useTheme } from '@/theme/useTheme';
 import {
   AnimatedPressable,
@@ -10,6 +10,7 @@ import {
   Button,
   EmptyState,
   FloatingButton,
+  IconButton,
   ScreenHeader,
   TextInput,
 } from '@/components';
@@ -40,7 +41,12 @@ export default function ShoppingListsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
-      <ScreenHeader title="Shopping Lists" />
+      <ScreenHeader
+        title="Shopping Lists"
+        accessory={
+          <IconButton icon={ChevronLeft} accessibilityLabel="Back" onPress={() => router.back()} />
+        }
+      />
       {lists.length === 0 ? (
         <EmptyState
           icon={ShoppingCart}

@@ -2,14 +2,17 @@ import { useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { Plus, ShoppingCart } from 'lucide-react-native';
+import { formatCurrency } from '@elara/shared';
 import { useTheme } from '@/theme/useTheme';
 import { Checkbox, EmptyState, ErrorState, IconButton, TextInput } from '@/components';
 import { categoryColors } from '@/theme/colors';
 import { useShoppingStore } from '@/stores/shopping-store';
+import { usePreferencesStore } from '@/stores/preferences-store';
 
 export default function ShoppingListDetailScreen() {
   const { listId } = useLocalSearchParams<{ listId: string }>();
   const { colors, spacing, typography } = useTheme();
+  const currency = usePreferencesStore((s) => s.currency);
   const list = useShoppingStore((s) => s.lists.find((l) => l.id === listId));
   const togglePurchased = useShoppingStore((s) => s.togglePurchased);
   const addItem = useShoppingStore((s) => s.addItem);
@@ -18,7 +21,7 @@ export default function ShoppingListDetailScreen() {
   if (!list) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
-        <Stack.Screen options={{ title: 'List' }} />
+        <Stack.Screen options={{ title: 'List', headerShown: true }} />
         <ErrorState title="List not found" onRetry={() => router.back()} />
       </View>
     );
@@ -37,7 +40,7 @@ export default function ShoppingListDetailScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Stack.Screen options={{ title: list.name }} />
+      <Stack.Screen options={{ title: list.name, headerShown: true }} />
       <ScrollView
         contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}
         keyboardShouldPersistTaps="handled"
@@ -49,7 +52,7 @@ export default function ShoppingListDetailScreen() {
           </View>
           <Text style={[typography.screenTitle, { color: colors.text }]}>{list.name}</Text>
           <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
-            Estimated total: ${estimate.toFixed(2)} · {toBuy.length} remaining
+            Estimated total: {formatCurrency(estimate, currency)} · {toBuy.length} remaining
           </Text>
         </View>
 
@@ -101,7 +104,7 @@ export default function ShoppingListDetailScreen() {
                     </Text>
                     {item.price > 0 ? (
                       <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                        ${item.price.toFixed(2)}
+                        {formatCurrency(item.price, currency)}
                       </Text>
                     ) : null}
                   </View>

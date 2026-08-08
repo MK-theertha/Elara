@@ -29,6 +29,7 @@ export * from './GradientBackground';
 export * from './Modal';
 export * from './BottomSheet';
 export * from './SwipeableRow';
+export * from './BiometricLock';
 export * from './icon-type';
 export * from './cards';
 export * from './charts';

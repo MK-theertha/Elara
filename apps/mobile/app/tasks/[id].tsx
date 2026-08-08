@@ -27,6 +27,8 @@ import {
 import { tasksApi } from '@/features/tasks/api';
 import { useToastStore } from '@/stores/toast-store';
 import { ApiError } from '@/lib/api-client';
+import { usePreferencesStore } from '@/stores/preferences-store';
+import { cancelTaskReminder, scheduleTaskReminder } from '@/lib/notifications';
 import {
   DUE_DATE_OPTIONS,
   dueDateOptionToIso,
@@ -63,6 +65,7 @@ export default function TaskDetailScreen() {
   const { colors, spacing, typography } = useTheme();
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
+  const taskRemindersEnabled = usePreferencesStore((s) => s.notifications.taskReminders);
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [newSubtask, setNewSubtask] = useState('');
   const [saving, setSaving] = useState(false);
@@ -129,12 +132,17 @@ export default function TaskDetailScreen() {
     setSaveError(null);
     setSaving(true);
     try {
-      await tasksApi.update(id, {
+      const updated = await tasksApi.update(id, {
         ...input,
         notes: input.notes || undefined,
         category: input.category || undefined,
       });
       await invalidateAll();
+      if (taskRemindersEnabled && updated.status === 'PENDING' && updated.dueDate) {
+        scheduleTaskReminder(updated.id, updated.title, updated.dueDate).catch(() => {});
+      } else {
+        cancelTaskReminder(id).catch(() => {});
+      }
       showToast('Task updated', 'success');
       setMode('view');
     } catch (err) {
@@ -150,10 +158,14 @@ export default function TaskDetailScreen() {
       if (task.status === 'COMPLETED') {
         await tasksApi.reopen(id);
         await invalidateAll();
+        if (taskRemindersEnabled && task.dueDate) {
+          scheduleTaskReminder(id, task.title, task.dueDate).catch(() => {});
+        }
         showToast('Task reopened', 'success');
       } else {
         await tasksApi.complete(id);
         await invalidateAll();
+        cancelTaskReminder(id).catch(() => {});
         showToast('Task completed', 'success');
       }
     } catch (err) {
@@ -172,12 +184,16 @@ export default function TaskDetailScreen() {
           try {
             await tasksApi.delete(id);
             await invalidateAll();
+            cancelTaskReminder(id).catch(() => {});
             showToast('Task deleted', 'success', {
               label: 'Undo',
               onPress: async () => {
                 try {
                   await tasksApi.restore(id);
                   await invalidateAll();
+                  if (taskRemindersEnabled && task?.dueDate) {
+                    scheduleTaskReminder(id, task.title, task.dueDate).catch(() => {});
+                  }
                 } catch (err) {
                   reportError(err);
                 }

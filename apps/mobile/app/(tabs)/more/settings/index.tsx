@@ -26,6 +26,16 @@ import {
 import { useToastStore } from '@/stores/toast-store';
 import type { ThemeMode } from '@/stores/theme-store';
 import type { IconType } from '@/components/icon-type';
+import { usePreferencesStore } from '@/stores/preferences-store';
+import { getBiometricAvailability, authenticate } from '@/lib/biometrics';
+import {
+  ensureNotificationPermission,
+  enableDailySummary,
+  disableDailySummary,
+  isExpoGo,
+} from '@/lib/notifications';
+import { exportLocalBackup, formatRelativeBackup } from '@/lib/backup';
+import { LANGUAGE_OPTIONS } from '@/lib/preference-options';
 
 const THEME_OPTIONS: { label: string; value: ThemeMode }[] = [
   { label: 'Light', value: 'light' },
@@ -54,12 +64,84 @@ export default function SettingsScreen() {
   const { colors, spacing, typography, mode, setMode } = useTheme();
   const showToast = useToastStore((s) => s.show);
   const [query, setQuery] = useState('');
-  const [taskReminders, setTaskReminders] = useState(true);
-  const [eventReminders, setEventReminders] = useState(true);
-  const [dailySummary, setDailySummary] = useState(false);
-  const [biometrics, setBiometrics] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
 
-  const notImplemented = (label: string) => showToast(`${label} is coming in a later phase`);
+  const language = usePreferencesStore((s) => s.language);
+  const timezone = usePreferencesStore((s) => s.timezone);
+  const currency = usePreferencesStore((s) => s.currency);
+  const biometricEnabled = usePreferencesStore((s) => s.biometricEnabled);
+  const setBiometricEnabled = usePreferencesStore((s) => s.setBiometricEnabled);
+  const notifications = usePreferencesStore((s) => s.notifications);
+  const setNotificationPreference = usePreferencesStore((s) => s.setNotificationPreference);
+  const lastBackupAt = usePreferencesStore((s) => s.lastBackupAt);
+  const markBackedUp = usePreferencesStore((s) => s.markBackedUp);
+
+  const languageLabel = LANGUAGE_OPTIONS.find((l) => l.code === language)?.label ?? language;
+
+  const handleTaskReminders = async (next: boolean) => {
+    if (next) {
+      if (isExpoGo()) {
+        showToast('Notifications need a development build — not available in Expo Go', 'danger');
+        return;
+      }
+      const granted = await ensureNotificationPermission();
+      if (!granted) {
+        showToast('Enable notifications for Elara in system settings to use reminders', 'danger');
+        return;
+      }
+    }
+    setNotificationPreference('taskReminders', next);
+  };
+
+  const handleDailySummary = async (next: boolean) => {
+    if (next) {
+      if (isExpoGo()) {
+        showToast('Notifications need a development build — not available in Expo Go', 'danger');
+        return;
+      }
+      const ok = await enableDailySummary();
+      if (!ok) {
+        showToast('Enable notifications for Elara in system settings to use this', 'danger');
+        return;
+      }
+    } else {
+      await disableDailySummary();
+    }
+    setNotificationPreference('dailySummary', next);
+  };
+
+  const handleBiometricToggle = async (next: boolean) => {
+    if (!next) {
+      setBiometricEnabled(false);
+      return;
+    }
+    const availability = await getBiometricAvailability();
+    if (availability === 'no-hardware') {
+      showToast("This device doesn't support Face ID or Touch ID", 'danger');
+      return;
+    }
+    if (availability === 'not-enrolled') {
+      showToast('Set up Face ID or Touch ID in your device settings first', 'danger');
+      return;
+    }
+    const confirmed = await authenticate('Confirm to enable biometric login');
+    if (confirmed) {
+      setBiometricEnabled(true);
+      showToast('Biometric login enabled', 'success');
+    }
+  };
+
+  const handleBackup = async () => {
+    setBackingUp(true);
+    try {
+      await exportLocalBackup();
+      markBackedUp();
+    } catch {
+      showToast("Couldn't export backup", 'danger');
+    } finally {
+      setBackingUp(false);
+    }
+  };
 
   const sections: { title: string; rows: Row[] }[] = [
     {
@@ -68,23 +150,26 @@ export default function SettingsScreen() {
         {
           kind: 'toggle',
           label: 'Task reminders',
+          subtitle: 'Notify me when a task is due',
           icon: Bell,
-          value: taskReminders,
-          onChange: setTaskReminders,
+          value: notifications.taskReminders,
+          onChange: handleTaskReminders,
         },
         {
           kind: 'toggle',
           label: 'Event reminders',
+          subtitle: 'Applies once Calendar syncs with your account',
           icon: Bell,
-          value: eventReminders,
-          onChange: setEventReminders,
+          value: notifications.eventReminders,
+          onChange: (v) => setNotificationPreference('eventReminders', v),
         },
         {
           kind: 'toggle',
           label: 'Daily summary',
+          subtitle: 'A reminder each morning at 8:00 AM',
           icon: Bell,
-          value: dailySummary,
-          onChange: setDailySummary,
+          value: notifications.dailySummary,
+          onChange: handleDailySummary,
         },
       ],
     },
@@ -94,23 +179,23 @@ export default function SettingsScreen() {
         {
           kind: 'nav',
           label: 'Language',
-          subtitle: 'English',
+          subtitle: languageLabel,
           icon: Globe,
-          onPress: () => notImplemented('Language'),
+          onPress: () => router.push('/(tabs)/more/settings/language'),
         },
         {
           kind: 'nav',
           label: 'Timezone',
-          subtitle: 'Automatic',
+          subtitle: timezone,
           icon: Globe,
-          onPress: () => notImplemented('Timezone'),
+          onPress: () => router.push('/(tabs)/more/settings/timezone'),
         },
         {
           kind: 'nav',
           label: 'Currency',
-          subtitle: 'USD',
+          subtitle: currency,
           icon: Wallet,
-          onPress: () => notImplemented('Currency'),
+          onPress: () => router.push('/(tabs)/more/settings/currency'),
         },
       ],
     },
@@ -120,15 +205,16 @@ export default function SettingsScreen() {
         {
           kind: 'toggle',
           label: 'Biometric login',
+          subtitle: 'Require Face ID / Touch ID to open Elara',
           icon: Fingerprint,
-          value: biometrics,
-          onChange: setBiometrics,
+          value: biometricEnabled,
+          onChange: handleBiometricToggle,
         },
         {
           kind: 'nav',
           label: 'Change password',
           icon: Shield,
-          onPress: () => notImplemented('Change password'),
+          onPress: () => router.push('/(tabs)/more/settings/change-password'),
         },
       ],
     },
@@ -137,23 +223,23 @@ export default function SettingsScreen() {
       rows: [
         {
           kind: 'nav',
-          label: 'Backup',
-          subtitle: 'Last backup: never',
+          label: backingUp ? 'Backing up…' : 'Backup',
+          subtitle: formatRelativeBackup(lastBackupAt),
           icon: DatabaseBackup,
-          onPress: () => notImplemented('Backup'),
+          onPress: handleBackup,
         },
         {
           kind: 'nav',
           label: 'Sync',
-          subtitle: 'Off',
+          subtitle: 'Tasks, events & expenses sync automatically when signed in',
           icon: Cloud,
-          onPress: () => notImplemented('Sync'),
+          onPress: () => showToast('Notes and shopping lists stay on-device for now'),
         },
         {
           kind: 'nav',
           label: 'Data & Privacy',
           icon: Shield,
-          onPress: () => notImplemented('Data & Privacy'),
+          onPress: () => router.push('/(tabs)/more/settings/data-privacy'),
         },
       ],
     },
@@ -163,9 +249,8 @@ export default function SettingsScreen() {
         {
           kind: 'nav',
           label: 'About Elara',
-          subtitle: 'v1.0.0',
           icon: Info,
-          onPress: () => notImplemented('About Elara'),
+          onPress: () => router.push('/(tabs)/more/settings/about'),
         },
       ],
     },
