@@ -11,8 +11,7 @@ export interface FloatingButtonProps extends Omit<PressableProps, 'children' | '
 }
 
 /** Generic circular floating action button — used for "add event", "add note", etc. on
- * screens that need one obvious floating affordance. The Home/tab-bar quick-add FAB with its
- * expanding menu lives separately in QuickActionFab. */
+ * screens that need one obvious floating affordance. */
 export function FloatingButton({
   icon: Icon,
   accessibilityLabel,

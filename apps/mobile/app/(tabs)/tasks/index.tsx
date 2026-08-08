@@ -3,13 +3,14 @@ import { View, FlatList, ScrollView, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Check, ListTodo, Trash2 } from 'lucide-react-native';
+import { Check, ListTodo, Plus, Trash2 } from 'lucide-react-native';
 import type { TaskDto } from '@elara/validation';
 import { useTheme } from '@/theme/useTheme';
 import {
   Chip,
   EmptyState,
   ErrorState,
+  FloatingButton,
   ProgressRing,
   ScreenHeader,
   SegmentedControl,
@@ -230,6 +231,14 @@ export default function TasksScreen() {
           bottomInset={insets.bottom}
         />
       )}
+
+      <View style={{ position: 'absolute', right: spacing.md, bottom: insets.bottom + 100 }}>
+        <FloatingButton
+          icon={Plus}
+          accessibilityLabel="New task"
+          onPress={() => router.push('/create/task')}
+        />
+      </View>
     </View>
   );
 }

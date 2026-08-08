@@ -2,7 +2,6 @@ import { Tabs } from 'expo-router';
 import { View } from 'react-native';
 import { useTheme } from '@/theme/useTheme';
 import { FloatingTabBar } from '@/components/FloatingTabBar';
-import { QuickActionFab } from '@/components/QuickActionFab';
 
 export default function TabsLayout() {
   const { colors } = useTheme();
@@ -22,7 +21,6 @@ export default function TabsLayout() {
         <Tabs.Screen name="more/index" options={{ title: 'More' }} />
       </Tabs>
       <FloatingTabBar />
-      <QuickActionFab />
     </View>
   );
 }

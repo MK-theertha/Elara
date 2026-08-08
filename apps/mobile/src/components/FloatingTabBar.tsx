@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Text, View, type LayoutChangeEvent } from 'react-native';
 import { usePathname, router } from 'expo-router';
-import { BlurView } from 'expo-blur';
 import { Calendar, CheckSquare, Home, LayoutGrid, Wallet } from 'lucide-react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -83,70 +82,71 @@ export function FloatingTabBar() {
         bottom: insets.bottom + spacing.xs,
       }}
     >
-      <View style={[{ borderRadius: 32, overflow: 'hidden' }, shadows.lg]}>
-        <BlurView intensity={50} tint="dark">
-          <View
-            onLayout={handleLayout}
-            style={{
-              flexDirection: 'row',
-              paddingVertical: spacing.xs,
-              paddingHorizontal: spacing.xs,
-              backgroundColor: 'rgba(26, 29, 36, 0.72)',
-              borderWidth: 1,
-              borderColor: colors.border,
-            }}
-          >
-            {barWidth > 0 ? (
-              <Animated.View
-                style={[
-                  {
-                    position: 'absolute',
-                    top: spacing.xs,
-                    bottom: spacing.xs,
-                    left: 0,
-                    borderRadius: 24,
-                    backgroundColor: `${colors.primary}1F`,
-                  },
-                  indicatorStyle,
-                ]}
+      <View
+        onLayout={handleLayout}
+        style={[
+          {
+            flexDirection: 'row',
+            paddingVertical: spacing.xs,
+            paddingHorizontal: spacing.xs,
+            borderRadius: 32,
+            backgroundColor: colors.surfaceElevated,
+            borderWidth: 1,
+            borderColor: colors.border,
+          },
+          shadows.lg,
+        ]}
+      >
+        {barWidth > 0 ? (
+          <Animated.View
+            style={[
+              {
+                position: 'absolute',
+                top: spacing.xs,
+                bottom: spacing.xs,
+                left: 0,
+                borderRadius: 24,
+                backgroundColor: `${colors.primary}1F`,
+              },
+              indicatorStyle,
+            ]}
+          />
+        ) : null}
+        {TABS.map((tab) => {
+          const active = tab.isActive(pathname);
+          return (
+            <AnimatedPressable
+              key={tab.key}
+              accessibilityRole="button"
+              accessibilityLabel={tab.label}
+              accessibilityState={{ selected: active }}
+              onPress={() => router.navigate(tab.route)}
+              scaleTo={0.9}
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+                paddingVertical: spacing.xs,
+              }}
+            >
+              <tab.icon
+                size={22}
+                color={active ? colors.primary : colors.textTertiary}
+                strokeWidth={active ? 2.1 : 1.75}
               />
-            ) : null}
-            {TABS.map((tab) => {
-              const active = tab.isActive(pathname);
-              return (
-                <AnimatedPressable
-                  key={tab.key}
-                  accessibilityRole="button"
-                  accessibilityLabel={tab.label}
-                  accessibilityState={{ selected: active }}
-                  onPress={() => router.navigate(tab.route)}
-                  scaleTo={0.9}
-                  style={{
-                    flex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 2,
-                    paddingVertical: spacing.xs,
-                  }}
-                >
-                  <tab.icon
-                    size={22}
-                    color={active ? colors.primary : colors.textTertiary}
-                    strokeWidth={active ? 2.1 : 1.75}
-                  />
-                  <Text
-                    style={[
-                      typography.tinyLabel,
-                      { color: active ? colors.primary : colors.textTertiary },
-                    ]}
-                  >
-                    {tab.label}
-                  </Text>
-                </AnimatedPressable>
-              );
-            })}
-          </View>
-        </BlurView>
+              <Text
+                numberOfLines={1}
+                style={[
+                  typography.tinyLabel,
+                  { color: active ? colors.primary : colors.textTertiary },
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </AnimatedPressable>
+          );
+        })}
       </View>
     </View>
   );

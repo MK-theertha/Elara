@@ -16,7 +16,6 @@ export * from './ErrorState';
 export * from './Skeleton';
 export * from './Toast';
 export * from './StatTile';
-export * from './QuickActionFab';
 export * from './ScreenHeader';
 export * from './CreatePlaceholder';
 export * from './TextInput';
