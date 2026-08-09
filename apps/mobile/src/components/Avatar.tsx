@@ -42,7 +42,11 @@ export function Avatar({ name, imageUri, size = 40, ring = false }: AvatarProps)
         <Image source={{ uri: imageUri }} style={{ width: '100%', height: '100%' }} />
       ) : (
         <Text
-          style={{ color: colors.onPrimary, fontFamily: 'Inter_600SemiBold', fontSize: size * 0.4 }}
+          style={{
+            color: colors.onPrimary,
+            fontFamily: 'PlusJakartaSans_600SemiBold',
+            fontSize: size * 0.4,
+          }}
         >
           {getInitials(name)}
         </Text>
