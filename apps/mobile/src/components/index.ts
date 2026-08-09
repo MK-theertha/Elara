@@ -17,7 +17,6 @@ export * from './Skeleton';
 export * from './Toast';
 export * from './StatTile';
 export * from './ScreenHeader';
-export * from './CreatePlaceholder';
 export * from './TextInput';
 export * from './SearchBar';
 export * from './SegmentedControl';

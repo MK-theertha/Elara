@@ -4,13 +4,10 @@ import Constants from 'expo-constants';
 import { ChevronLeft, Heart } from 'lucide-react-native';
 import { useTheme } from '@/theme/useTheme';
 import { Card, IconButton, ListItem, ScreenHeader } from '@/components';
-import { useToastStore } from '@/stores/toast-store';
 
 export default function AboutScreen() {
   const { colors, spacing, radius, typography } = useTheme();
-  const showToast = useToastStore((s) => s.show);
   const version = Constants.expoConfig?.version ?? '1.0.0';
-  const notImplemented = (label: string) => showToast(`${label} is coming in a later phase`);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -60,17 +57,17 @@ export default function AboutScreen() {
             <ListItem
               title="Terms of Service"
               showChevron
-              onPress={() => notImplemented('Terms of Service')}
+              onPress={() => router.push('/(tabs)/more/settings/terms' as never)}
             />
             <ListItem
               title="Privacy Policy"
               showChevron
-              onPress={() => notImplemented('Privacy Policy')}
+              onPress={() => router.push('/(tabs)/more/settings/privacy')}
             />
             <ListItem
               title="Open Source Licenses"
               showChevron
-              onPress={() => notImplemented('Licenses')}
+              onPress={() => router.push('/(tabs)/more/settings/licenses')}
             />
           </Card>
         </View>
