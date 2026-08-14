@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -31,22 +31,26 @@ const THRESHOLD = 88;
 export function SwipeableRow({ children, leftAction, rightAction }: SwipeableRowProps) {
   const translateX = useSharedValue(0);
 
-  const pan = Gesture.Pan()
-    .activeOffsetX([-10, 10])
-    .onUpdate((e) => {
-      let next = e.translationX;
-      if (!leftAction) next = Math.min(next, 0);
-      if (!rightAction) next = Math.max(next, 0);
-      translateX.value = next;
-    })
-    .onEnd(() => {
-      if (translateX.value > THRESHOLD && leftAction) {
-        runOnJS(leftAction.onTrigger)();
-      } else if (translateX.value < -THRESHOLD && rightAction) {
-        runOnJS(rightAction.onTrigger)();
-      }
-      translateX.value = withSpring(0, motion.spring.gentle);
-    });
+  const pan = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-10, 10])
+        .onUpdate((e) => {
+          let next = e.translationX;
+          if (!leftAction) next = Math.min(next, 0);
+          if (!rightAction) next = Math.max(next, 0);
+          translateX.value = next;
+        })
+        .onEnd(() => {
+          if (translateX.value > THRESHOLD && leftAction) {
+            runOnJS(leftAction.onTrigger)();
+          } else if (translateX.value < -THRESHOLD && rightAction) {
+            runOnJS(rightAction.onTrigger)();
+          }
+          translateX.value = withSpring(0, motion.spring.gentle);
+        }),
+    [leftAction, rightAction, translateX],
+  );
 
   const rowStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }] }));
   const leftStyle = useAnimatedStyle(() => ({ opacity: translateX.value > 24 ? 1 : 0 }));

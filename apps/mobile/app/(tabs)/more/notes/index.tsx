@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { ScrollView, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -17,7 +17,7 @@ import { categoryColors } from '@/theme/colors';
 import { useNotesStore } from '@/stores/notes-store';
 import type { MockNote } from '@/lib/mock-data';
 
-function NoteCard({
+const NoteCard = memo(function NoteCard({
   note,
   onPress,
   onToggleFavorite,
@@ -69,7 +69,7 @@ function NoteCard({
       </Text>
     </AnimatedPressable>
   );
-}
+});
 
 export default function NotesScreen() {
   const { colors, spacing } = useTheme();
@@ -92,10 +92,13 @@ export default function NotesScreen() {
     [notes, folder, query],
   );
 
-  const pinned = filtered.filter((n) => n.pinned);
-  const rest = filtered.filter((n) => !n.pinned);
-  const columns: MockNote[][] = [[], []];
-  rest.forEach((note, i) => columns[i % 2]!.push(note));
+  const { pinned, columns } = useMemo(() => {
+    const pinnedNotes = filtered.filter((n) => n.pinned);
+    const rest = filtered.filter((n) => !n.pinned);
+    const cols: MockNote[][] = [[], []];
+    rest.forEach((note, i) => cols[i % 2]!.push(note));
+    return { pinned: pinnedNotes, columns: cols };
+  }, [filtered]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>

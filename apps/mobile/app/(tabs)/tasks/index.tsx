@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { View, FlatList, ScrollView, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -57,6 +57,30 @@ function timelineBucket(task: TaskDto): string {
 
 const TIMELINE_ORDER = ['Overdue', 'Today', 'Tomorrow', 'This week', 'Later', 'No due date'];
 
+const TaskRow = memo(function TaskRow({
+  task,
+  onToggleComplete,
+  onDelete,
+}: {
+  task: TaskDto;
+  onToggleComplete: (task: TaskDto) => void;
+  onDelete: (task: TaskDto) => void;
+}) {
+  const { colors } = useTheme();
+  const handlePress = useCallback(() => router.push(`/tasks/${task.id}`), [task.id]);
+  const handleToggle = useCallback(() => onToggleComplete(task), [task, onToggleComplete]);
+  const handleDeleteTrigger = useCallback(() => onDelete(task), [task, onDelete]);
+
+  return (
+    <SwipeableRow
+      leftAction={{ icon: Check, color: colors.success, onTrigger: handleToggle }}
+      rightAction={{ icon: Trash2, color: colors.danger, onTrigger: handleDeleteTrigger }}
+    >
+      <TaskCard task={task} onPress={handlePress} onToggleComplete={handleToggle} />
+    </SwipeableRow>
+  );
+});
+
 export default function TasksScreen() {
   const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
@@ -86,39 +110,51 @@ export default function TasksScreen() {
     return { done, total: data.length, ratio: done / data.length };
   }, [filter, data]);
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['tasks'] });
-  const reportError = (err: unknown) =>
-    showToast(err instanceof ApiError ? err.message : 'Something went wrong', 'danger');
+  const invalidate = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    [queryClient],
+  );
+  const reportError = useCallback(
+    (err: unknown) =>
+      showToast(err instanceof ApiError ? err.message : 'Something went wrong', 'danger'),
+    [showToast],
+  );
 
-  const handleToggleComplete = async (task: TaskDto) => {
-    try {
-      if (task.status === 'COMPLETED') await tasksApi.reopen(task.id);
-      else await tasksApi.complete(task.id);
-      await invalidate();
-    } catch (err) {
-      reportError(err);
-    }
-  };
+  const handleToggleComplete = useCallback(
+    async (task: TaskDto) => {
+      try {
+        if (task.status === 'COMPLETED') await tasksApi.reopen(task.id);
+        else await tasksApi.complete(task.id);
+        await invalidate();
+      } catch (err) {
+        reportError(err);
+      }
+    },
+    [invalidate, reportError],
+  );
 
-  const handleDelete = async (task: TaskDto) => {
-    try {
-      await tasksApi.delete(task.id);
-      await invalidate();
-      showToast('Task deleted', 'success', {
-        label: 'Undo',
-        onPress: async () => {
-          try {
-            await tasksApi.restore(task.id);
-            await invalidate();
-          } catch (err) {
-            reportError(err);
-          }
-        },
-      });
-    } catch (err) {
-      reportError(err);
-    }
-  };
+  const handleDelete = useCallback(
+    async (task: TaskDto) => {
+      try {
+        await tasksApi.delete(task.id);
+        await invalidate();
+        showToast('Task deleted', 'success', {
+          label: 'Undo',
+          onPress: async () => {
+            try {
+              await tasksApi.restore(task.id);
+              await invalidate();
+            } catch (err) {
+              reportError(err);
+            }
+          },
+        });
+      } catch (err) {
+        reportError(err);
+      }
+    },
+    [invalidate, reportError, showToast],
+  );
 
   const emptyState = (
     <EmptyState
@@ -192,30 +228,16 @@ export default function TasksScreen() {
           keyExtractor={(task) => task.id}
           refreshing={isRefetching}
           onRefresh={refetch}
+          initialNumToRender={12}
+          maxToRenderPerBatch={12}
+          windowSize={7}
           contentContainerStyle={{
             padding: spacing.md,
             gap: spacing.sm,
             paddingBottom: insets.bottom + 140,
           }}
           renderItem={({ item }) => (
-            <SwipeableRow
-              leftAction={{
-                icon: Check,
-                color: colors.success,
-                onTrigger: () => handleToggleComplete(item),
-              }}
-              rightAction={{
-                icon: Trash2,
-                color: colors.danger,
-                onTrigger: () => handleDelete(item),
-              }}
-            >
-              <TaskCard
-                task={item}
-                onPress={() => router.push(`/tasks/${item.id}`)}
-                onToggleComplete={() => handleToggleComplete(item)}
-              />
-            </SwipeableRow>
+            <TaskRow task={item} onToggleComplete={handleToggleComplete} onDelete={handleDelete} />
           )}
         />
       ) : layout === 'kanban' ? (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -35,12 +35,27 @@ export default function CalendarScreen() {
   const [monthAnchor, setMonthAnchor] = useState(() => startOfMonth(new Date()));
 
   const events = useMemo(() => getSampleEvents(), []);
-  const eventsByDay = (date: Date) =>
-    events
-      .filter((e) => isSameDay(e.start, date))
-      .sort((a, b) => a.start.getTime() - b.start.getTime());
 
-  const selectedDayEvents = eventsByDay(selectedDate);
+  const eventsByDayKey = useMemo(() => {
+    const map = new Map<string, typeof events>();
+    const sorted = [...events].sort((a, b) => a.start.getTime() - b.start.getTime());
+    for (const event of sorted) {
+      const key = event.start.toDateString();
+      const list = map.get(key) ?? [];
+      list.push(event);
+      map.set(key, list);
+    }
+    return map;
+  }, [events]);
+
+  const eventsByDay = useCallback(
+    (date: Date) => eventsByDayKey.get(date.toDateString()) ?? [],
+    [eventsByDayKey],
+  );
+
+  const selectedDayEvents = useMemo(() => eventsByDay(selectedDate), [eventsByDay, selectedDate]);
+
+  const monthGrid = useMemo(() => buildMonthGrid(monthAnchor), [monthAnchor]);
 
   const agendaGroups = useMemo(() => {
     const sorted = [...events].sort((a, b) => a.start.getTime() - b.start.getTime());
@@ -121,7 +136,7 @@ export default function CalendarScreen() {
             </View>
 
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {buildMonthGrid(monthAnchor).map((date, i) => {
+              {monthGrid.map((date, i) => {
                 if (!date) return <View key={i} style={{ width: `${100 / 7}%`, height: 52 }} />;
                 const dayEvents = eventsByDay(date);
                 const selected = isSameDay(date, selectedDate);

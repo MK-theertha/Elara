@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { ScrollView, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -42,15 +43,19 @@ export default function ExpensesScreen() {
   const insets = useSafeAreaInsets();
   const currency = usePreferencesStore((s) => s.currency);
 
-  const categories = getExpenseCategories();
-  const monthTotal = categories.reduce((sum, c) => sum + c.amount, 0);
-  const trend = getMonthlySpendTrend();
-  const transactions = getRecentTransactions();
-  const pieData = categories.map((c) => ({
-    label: c.label,
-    value: Math.round((c.amount / monthTotal) * 100),
-    color: categoryColors[c.color],
-  }));
+  const categories = useMemo(() => getExpenseCategories(), []);
+  const monthTotal = useMemo(() => categories.reduce((sum, c) => sum + c.amount, 0), [categories]);
+  const trend = useMemo(() => getMonthlySpendTrend(), []);
+  const transactions = useMemo(() => getRecentTransactions(), []);
+  const pieData = useMemo(
+    () =>
+      categories.map((c) => ({
+        label: c.label,
+        value: Math.round((c.amount / monthTotal) * 100),
+        color: categoryColors[c.color],
+      })),
+    [categories, monthTotal],
+  );
   const budgetRatio = monthTotal / MONTHLY_BUDGET;
   const savingsRatio = SAVINGS_CURRENT / SAVINGS_GOAL;
 

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, View, type LayoutChangeEvent } from 'react-native';
 import { usePathname, router } from 'expo-router';
 import { Calendar, CheckSquare, Home, LayoutGrid, Wallet } from 'lucide-react-native';
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/useTheme';
 import { motion } from '@/theme/animations';
@@ -64,10 +64,15 @@ export function FloatingTabBar() {
     TABS.findIndex((t) => t.isActive(pathname)),
   );
   const segmentWidth = barWidth / TABS.length;
+  const indicatorX = useSharedValue(0);
+
+  useEffect(() => {
+    indicatorX.value = withTiming(segmentWidth * activeIndex, motion.timing.fast);
+  }, [segmentWidth, activeIndex, indicatorX]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
     width: segmentWidth,
-    transform: [{ translateX: withTiming(segmentWidth * activeIndex, motion.timing.fast) }],
+    transform: [{ translateX: indicatorX.value }],
   }));
 
   const handleLayout = (e: LayoutChangeEvent) => setBarWidth(e.nativeEvent.layout.width);

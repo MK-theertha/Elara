@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { memo, useCallback, useEffect, useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import {
   Wallet,
 } from 'lucide-react-native';
 import { formatCurrency } from '@elara/shared';
+import type { TaskDto } from '@elara/validation';
 import { useTheme } from '@/theme/useTheme';
 import { categoryColors } from '@/theme/colors';
 import { getGreeting } from '@/lib/greeting';
@@ -83,6 +84,21 @@ function WidgetHeader({
   );
 }
 
+const HomeTaskRow = memo(function HomeTaskRow({
+  task,
+  onToggleComplete,
+}: {
+  task: TaskDto;
+  onToggleComplete: (taskId: string, completed: boolean) => void;
+}) {
+  const handlePress = useCallback(() => router.push(`/tasks/${task.id}`), [task.id]);
+  const handleToggle = useCallback(
+    () => onToggleComplete(task.id, task.status === 'COMPLETED'),
+    [task.id, task.status, onToggleComplete],
+  );
+  return <TaskCard task={task} onPress={handlePress} onToggleComplete={handleToggle} />;
+});
+
 export default function HomeScreen() {
   const { colors, spacing, radius, typography } = useTheme();
   const insets = useSafeAreaInsets();
@@ -109,25 +125,41 @@ export default function HomeScreen() {
     queryFn: () => tasksApi.list({ view: 'completed' }),
   });
 
-  const handleToggleComplete = async (taskId: string, completed: boolean) => {
-    try {
-      if (completed) await tasksApi.reopen(taskId);
-      else await tasksApi.complete(taskId);
-      await queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Something went wrong', 'danger');
-    }
-  };
+  const handleToggleComplete = useCallback(
+    async (taskId: string, completed: boolean) => {
+      try {
+        if (completed) await tasksApi.reopen(taskId);
+        else await tasksApi.complete(taskId);
+        await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      } catch (err) {
+        showToast(err instanceof ApiError ? err.message : 'Something went wrong', 'danger');
+      }
+    },
+    [queryClient, showToast],
+  );
 
-  const todaysEvents = getTodaysEvents();
-  const expenseCategories = getExpenseCategories();
-  const monthTotal = expenseCategories.reduce((sum, c) => sum + c.amount, 0);
-  const topCategories = [...expenseCategories].sort((a, b) => b.amount - a.amount).slice(0, 3);
-  const shoppingList = getSampleShoppingLists()[0]!;
-  const remainingItems = shoppingList.items.filter((i) => !i.purchased);
-  const notes = getSampleNotes()
-    .filter((n) => n.pinned)
-    .slice(0, 2);
+  const todaysEvents = useMemo(() => getTodaysEvents(), []);
+  const expenseCategories = useMemo(() => getExpenseCategories(), []);
+  const monthTotal = useMemo(
+    () => expenseCategories.reduce((sum, c) => sum + c.amount, 0),
+    [expenseCategories],
+  );
+  const topCategories = useMemo(
+    () => [...expenseCategories].sort((a, b) => b.amount - a.amount).slice(0, 3),
+    [expenseCategories],
+  );
+  const shoppingList = useMemo(() => getSampleShoppingLists()[0]!, []);
+  const remainingItems = useMemo(
+    () => shoppingList.items.filter((i) => !i.purchased),
+    [shoppingList],
+  );
+  const notes = useMemo(
+    () =>
+      getSampleNotes()
+        .filter((n) => n.pinned)
+        .slice(0, 2),
+    [],
+  );
 
   const renderWidget = (key: HomeWidgetKey, drag: () => void, isActive: boolean) => {
     switch (key) {
@@ -155,14 +187,7 @@ export default function HomeScreen() {
             {todayTasks && todayTasks.length > 0 ? (
               <View style={{ gap: spacing.xs }}>
                 {todayTasks.slice(0, 3).map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onPress={() => router.push(`/tasks/${task.id}`)}
-                    onToggleComplete={() =>
-                      handleToggleComplete(task.id, task.status === 'COMPLETED')
-                    }
-                  />
+                  <HomeTaskRow key={task.id} task={task} onToggleComplete={handleToggleComplete} />
                 ))}
               </View>
             ) : (

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View, Text } from 'react-native';
 import { ShoppingBag } from 'lucide-react-native';
 import { formatCurrency } from '@elara/shared';
@@ -17,7 +18,7 @@ export interface ShoppingCardProps {
   onPress?: () => void;
 }
 
-export function ShoppingCard({
+export const ShoppingCard = memo(function ShoppingCard({
   name,
   store,
   color,
@@ -76,4 +77,4 @@ export function ShoppingCard({
       />
     </AnimatedPressable>
   );
-}
+});

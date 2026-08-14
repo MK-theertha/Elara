@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View, Text } from 'react-native';
 import type { TaskDto } from '@elara/validation';
 import { useTheme } from '@/theme/useTheme';
@@ -13,7 +14,7 @@ export interface TaskCardProps {
   onToggleComplete?: () => void;
 }
 
-export function TaskCard({ task, onPress, onToggleComplete }: TaskCardProps) {
+export const TaskCard = memo(function TaskCard({ task, onPress, onToggleComplete }: TaskCardProps) {
   const { colors, spacing, radius, typography } = useTheme();
   const completed = task.status === 'COMPLETED';
   const accent = priorityColor(task.priority, colors);
@@ -78,4 +79,4 @@ export function TaskCard({ task, onPress, onToggleComplete }: TaskCardProps) {
       </View>
     </AnimatedPressable>
   );
-}
+});

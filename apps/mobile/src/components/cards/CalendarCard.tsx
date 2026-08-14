@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View, Text } from 'react-native';
 import { MapPin } from 'lucide-react-native';
 import { useTheme } from '@/theme/useTheme';
@@ -15,7 +16,14 @@ export interface CalendarCardProps {
   onPress?: () => void;
 }
 
-export function CalendarCard({ title, start, end, color, location, onPress }: CalendarCardProps) {
+export const CalendarCard = memo(function CalendarCard({
+  title,
+  start,
+  end,
+  color,
+  location,
+  onPress,
+}: CalendarCardProps) {
   const { colors, spacing, radius, typography } = useTheme();
   const timezone = usePreferencesStore((s) => s.timezone);
   const tint = categoryColors[color];
@@ -53,4 +61,4 @@ export function CalendarCard({ title, start, end, color, location, onPress }: Ca
       </View>
     </AnimatedPressable>
   );
-}
+});
