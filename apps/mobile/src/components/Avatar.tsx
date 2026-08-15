@@ -1,4 +1,5 @@
-import { View, Text, Image } from 'react-native';
+import { View, Text } from 'react-native';
+import { Image } from 'expo-image';
 import { useTheme } from '@/theme/useTheme';
 
 export interface AvatarProps {
@@ -39,7 +40,12 @@ export function Avatar({ name, imageUri, size = 40, ring = false }: AvatarProps)
       ]}
     >
       {imageUri ? (
-        <Image source={{ uri: imageUri }} style={{ width: '100%', height: '100%' }} />
+        <Image
+          source={{ uri: imageUri }}
+          style={{ width: '100%', height: '100%' }}
+          recyclingKey={imageUri}
+          cachePolicy="memory-disk"
+        />
       ) : (
         <Text
           style={{

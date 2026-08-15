@@ -15,7 +15,8 @@
       "expo-background-task",
       "expo-font",
       "expo-splash-screen",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true
