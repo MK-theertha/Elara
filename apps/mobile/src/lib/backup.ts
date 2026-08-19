@@ -1,16 +1,14 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { useNotesStore } from '@/stores/notes-store';
 import { useShoppingStore } from '@/stores/shopping-store';
 import { usePreferencesStore } from '@/stores/preferences-store';
 
-/** Exports everything Elara stores locally (notes, shopping lists, preferences — there's no
- * task/calendar/expense backup here since those already live on the API server once synced)
- * to a JSON file and hands it to the OS share sheet. Purely local; no network involved. */
+/** Exports everything Elara stores locally (shopping lists, preferences — there's no
+ * task/calendar/notes/expense backup here since those already live on the API server once
+ * synced) to a JSON file and hands it to the OS share sheet. Purely local; no network involved. */
 export async function exportLocalBackup(): Promise<void> {
   const payload = {
     exportedAt: new Date().toISOString(),
-    notes: useNotesStore.getState().notes,
     shoppingLists: useShoppingStore.getState().lists,
     preferences: {
       language: usePreferencesStore.getState().language,
@@ -32,18 +30,15 @@ export async function exportLocalBackup(): Promise<void> {
 }
 
 export function getLocalDataCounts(): {
-  notes: number;
   shoppingLists: number;
   shoppingItems: number;
 } {
-  const notes = useNotesStore.getState().notes.length;
   const lists = useShoppingStore.getState().lists;
   const shoppingItems = lists.reduce((sum, l) => sum + l.items.length, 0);
-  return { notes, shoppingLists: lists.length, shoppingItems };
+  return { shoppingLists: lists.length, shoppingItems };
 }
 
 export function clearLocalData(): void {
-  useNotesStore.setState({ notes: [] });
   useShoppingStore.setState({ lists: [] });
 }
 

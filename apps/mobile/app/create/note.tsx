@@ -1,38 +1,49 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Stack, router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { createNoteSchema } from '@elara/validation';
 import { useTheme } from '@/theme/useTheme';
-import { AnimatedPressable, Button, TextInput } from '@/components';
-import { categoryColors, type CategoryColorKey } from '@/theme/colors';
-import { useNotesStore } from '@/stores/notes-store';
+import { Button, Chip, TextInput } from '@/components';
+import { categoryColors } from '@/theme/colors';
+import { notesApi } from '@/features/notes/api';
+import { categoryToColorKey, NOTE_CATEGORIES } from '@/features/notes/categories';
 import { useToastStore } from '@/stores/toast-store';
-
-const COLOR_OPTIONS: CategoryColorKey[] = [
-  'indigo',
-  'violet',
-  'green',
-  'amber',
-  'red',
-  'blue',
-  'pink',
-  'teal',
-];
-const FOLDERS = ['Personal', 'Work', 'Ideas'];
+import { ApiError } from '@/lib/api-client';
 
 export default function CreateNoteScreen() {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
+  const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
-  const addNote = useNotesStore((s) => s.addNote);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [color, setColor] = useState<CategoryColorKey>('indigo');
-  const [folder, setFolder] = useState(FOLDERS[0]!);
+  const [category, setCategory] = useState(NOTE_CATEGORIES[0]!);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    if (!title.trim()) return;
-    const id = addNote({ title: title.trim(), preview: body.trim(), color, folder });
-    showToast('Note created', 'success');
-    router.replace(`/(tabs)/more/notes/${id}`);
+  const handleSubmit = async () => {
+    setError(null);
+    const parsed = createNoteSchema.safeParse({
+      title: title.trim(),
+      body: body.trim() || undefined,
+      category,
+    });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? 'Something went wrong.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const note = await notesApi.create(parsed.data);
+      await queryClient.invalidateQueries({ queryKey: ['notes'] });
+      showToast('Note created', 'success');
+      router.replace(`/(tabs)/more/notes/${note.id}`);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -46,6 +57,18 @@ export default function CreateNoteScreen() {
         contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}
         keyboardShouldPersistTaps="handled"
       >
+        {error ? (
+          <View
+            style={{
+              backgroundColor: colors.danger,
+              borderRadius: radius.button,
+              padding: spacing.sm,
+            }}
+          >
+            <Text style={[typography.bodySmall, { color: colors.textInverse }]}>{error}</Text>
+          </View>
+        ) : null}
+
         <TextInput label="Title" value={title} onChangeText={setTitle} autoFocus />
         <TextInput
           label="Note (optional)"
@@ -56,59 +79,21 @@ export default function CreateNoteScreen() {
         />
 
         <View style={{ gap: spacing.xxs }}>
-          <Text style={[typography.caption, { color: colors.textSecondary }]}>Folder</Text>
-          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-            {FOLDERS.map((f) => (
-              <AnimatedPressable
-                key={f}
-                accessibilityRole="button"
-                onPress={() => setFolder(f)}
-                scaleTo={0.95}
-                style={{
-                  paddingHorizontal: spacing.sm + 2,
-                  paddingVertical: spacing.xs,
-                  borderRadius: 999,
-                  backgroundColor: folder === f ? colors.primary : colors.backgroundSecondary,
-                }}
-              >
-                <Text
-                  style={[
-                    typography.caption,
-                    { color: folder === f ? colors.onPrimary : colors.text },
-                  ]}
-                >
-                  {f}
-                </Text>
-              </AnimatedPressable>
-            ))}
-          </View>
-        </View>
-
-        <View style={{ gap: spacing.xxs }}>
-          <Text style={[typography.caption, { color: colors.textSecondary }]}>Color</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {COLOR_OPTIONS.map((c) => (
-              <AnimatedPressable
+          <Text style={[typography.caption, { color: colors.textSecondary }]}>Category</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+            {NOTE_CATEGORIES.map((c) => (
+              <Chip
                 key={c}
-                accessibilityRole="button"
-                accessibilityLabel={`${c} color`}
-                accessibilityState={{ selected: color === c }}
-                onPress={() => setColor(c)}
-                scaleTo={0.85}
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 17,
-                  backgroundColor: categoryColors[c],
-                  borderWidth: color === c ? 3 : 0,
-                  borderColor: colors.surface,
-                }}
+                label={c}
+                selected={category === c}
+                color={categoryColors[categoryToColorKey(c)]}
+                onPress={() => setCategory(c)}
               />
             ))}
           </View>
         </View>
 
-        <Button label="Create Note" onPress={handleSubmit} fullWidth />
+        <Button label="Create Note" onPress={handleSubmit} loading={submitting} fullWidth />
       </ScrollView>
     </KeyboardAvoidingView>
   );

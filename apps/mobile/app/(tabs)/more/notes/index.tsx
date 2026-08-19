@@ -1,33 +1,62 @@
 import { memo, useMemo, useState } from 'react';
 import { ScrollView, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { ChevronLeft, Pin, Plus, Star, StickyNote } from 'lucide-react-native';
+import type { NoteDto } from '@elara/validation';
 import { useTheme } from '@/theme/useTheme';
 import {
   AnimatedPressable,
   Chip,
   EmptyState,
+  ErrorState,
   FloatingButton,
   IconButton,
   ScreenHeader,
   SearchBar,
+  SkeletonCard,
 } from '@/components';
 import { categoryColors } from '@/theme/colors';
-import { useNotesStore } from '@/stores/notes-store';
-import type { MockNote } from '@/lib/mock-data';
+import { hashedCardHeight } from '@/lib/category-color';
+import { notesApi } from '@/features/notes/api';
+import { categoryToColorKey, isFavorite, toggleFavoriteTag } from '@/features/notes/categories';
+import { useToastStore } from '@/stores/toast-store';
+import { ApiError } from '@/lib/api-client';
+
+interface NoteViewModel {
+  id: string;
+  title: string;
+  preview: string;
+  category: string;
+  pinned: boolean;
+  favorite: boolean;
+  tags: string[];
+}
+
+function toViewModel(note: NoteDto): NoteViewModel {
+  return {
+    id: note.id,
+    title: note.title,
+    preview: note.body ?? '',
+    category: note.category ?? 'Uncategorized',
+    pinned: note.pinned,
+    favorite: isFavorite(note.tags),
+    tags: note.tags,
+  };
+}
 
 const NoteCard = memo(function NoteCard({
   note,
   onPress,
   onToggleFavorite,
 }: {
-  note: MockNote;
+  note: NoteViewModel;
   onPress: () => void;
   onToggleFavorite: () => void;
 }) {
   const { colors, spacing, radius, typography } = useTheme();
-  const tint = categoryColors[note.color];
+  const tint = categoryColors[categoryToColorKey(note.category)];
 
   return (
     <AnimatedPressable
@@ -40,7 +69,7 @@ const NoteCard = memo(function NoteCard({
         borderWidth: 1,
         borderColor: `${tint}22`,
         padding: spacing.sm + 2,
-        minHeight: note.height,
+        minHeight: hashedCardHeight(note.id),
         gap: spacing.xs,
       }}
     >
@@ -74,31 +103,52 @@ const NoteCard = memo(function NoteCard({
 export default function NotesScreen() {
   const { colors, spacing } = useTheme();
   const insets = useSafeAreaInsets();
-  const notes = useNotesStore((s) => s.notes);
-  const toggleFavorite = useNotesStore((s) => s.toggleFavorite);
+  const queryClient = useQueryClient();
+  const showToast = useToastStore((s) => s.show);
   const [query, setQuery] = useState('');
-  const [folder, setFolder] = useState<string | null>(null);
+  const [category, setCategory] = useState<string | null>(null);
 
-  const folders = useMemo(() => Array.from(new Set(notes.map((n) => n.folder))), [notes]);
+  const {
+    data: notesData,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ['notes'],
+    queryFn: () => notesApi.list(),
+  });
+
+  const notes = useMemo(() => (notesData ?? []).map(toViewModel), [notesData]);
+
+  const categories = useMemo(() => Array.from(new Set(notes.map((n) => n.category))), [notes]);
 
   const filtered = useMemo(
     () =>
       notes.filter((n) => {
-        if (folder && n.folder !== folder) return false;
+        if (category && n.category !== category) return false;
         if (query && !`${n.title} ${n.preview}`.toLowerCase().includes(query.toLowerCase()))
           return false;
         return true;
       }),
-    [notes, folder, query],
+    [notes, category, query],
   );
 
   const { pinned, columns } = useMemo(() => {
     const pinnedNotes = filtered.filter((n) => n.pinned);
     const rest = filtered.filter((n) => !n.pinned);
-    const cols: MockNote[][] = [[], []];
+    const cols: NoteViewModel[][] = [[], []];
     rest.forEach((note, i) => cols[i % 2]!.push(note));
     return { pinned: pinnedNotes, columns: cols };
   }, [filtered]);
+
+  const handleToggleFavorite = async (note: NoteViewModel) => {
+    try {
+      await notesApi.update(note.id, { tags: toggleFavoriteTag(note.tags) });
+      await queryClient.invalidateQueries({ queryKey: ['notes'] });
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : 'Something went wrong', 'danger');
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
@@ -110,21 +160,29 @@ export default function NotesScreen() {
       />
       <View style={{ paddingHorizontal: spacing.md, gap: spacing.sm, marginBottom: spacing.sm }}>
         <SearchBar value={query} onChangeText={setQuery} placeholder="Search notes" />
-        {folders.length > 0 ? (
+        {categories.length > 0 ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: spacing.xs }}
           >
-            <Chip label="All" selected={folder === null} onPress={() => setFolder(null)} />
-            {folders.map((f) => (
-              <Chip key={f} label={f} selected={folder === f} onPress={() => setFolder(f)} />
+            <Chip label="All" selected={category === null} onPress={() => setCategory(null)} />
+            {categories.map((c) => (
+              <Chip key={c} label={c} selected={category === c} onPress={() => setCategory(c)} />
             ))}
           </ScrollView>
         ) : null}
       </View>
 
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <View style={{ padding: spacing.md, gap: spacing.sm }}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
+      ) : isError ? (
+        <ErrorState description="Couldn't load your notes." onRetry={() => refetch()} />
+      ) : filtered.length === 0 ? (
         <EmptyState
           icon={StickyNote}
           title="No notes found"
@@ -147,7 +205,7 @@ export default function NotesScreen() {
                   key={note.id}
                   note={note}
                   onPress={() => router.push(`/(tabs)/more/notes/${note.id}`)}
-                  onToggleFavorite={() => toggleFavorite(note.id)}
+                  onToggleFavorite={() => handleToggleFavorite(note)}
                 />
               ))}
             </View>
@@ -160,7 +218,7 @@ export default function NotesScreen() {
                     key={note.id}
                     note={note}
                     onPress={() => router.push(`/(tabs)/more/notes/${note.id}`)}
-                    onToggleFavorite={() => toggleFavorite(note.id)}
+                    onToggleFavorite={() => handleToggleFavorite(note)}
                   />
                 ))}
               </View>

@@ -1,6 +1,6 @@
 import { Alert, ScrollView, View, Text } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronLeft, FileText, ShoppingCart, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, ShoppingCart, Trash2 } from 'lucide-react-native';
 import { useTheme } from '@/theme/useTheme';
 import { Button, Card, IconButton, ScreenHeader, StatTile } from '@/components';
 import { useToastStore } from '@/stores/toast-store';
@@ -14,7 +14,7 @@ export default function DataPrivacyScreen() {
   const handleClear = () => {
     Alert.alert(
       'Clear local data',
-      'This permanently deletes every note and shopping list stored on this device. This cannot be undone.',
+      'This permanently deletes every shopping list stored on this device. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -49,7 +49,6 @@ export default function DataPrivacyScreen() {
             Stored on this device
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            <StatTile label="Notes" value={counts.notes} icon={FileText} />
             <StatTile label="Shopping items" value={counts.shoppingItems} icon={ShoppingCart} />
           </View>
         </View>
@@ -59,8 +58,8 @@ export default function DataPrivacyScreen() {
             How Elara handles your data
           </Text>
           <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
-            Tasks, calendar events, and expenses sync with your account on Elara&apos;s servers.
-            Notes and shopping lists currently live only on this device. Elara does not sell your
+            Tasks, calendar events, notes, and expenses sync with your account on Elara&apos;s
+            servers. Shopping lists currently live only on this device. Elara does not sell your
             data or share it with advertisers.
           </Text>
         </Card>

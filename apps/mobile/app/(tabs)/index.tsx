@@ -18,14 +18,11 @@ import type { TaskDto } from '@elara/validation';
 import { useTheme } from '@/theme/useTheme';
 import { categoryColors } from '@/theme/colors';
 import { getGreeting } from '@/lib/greeting';
-import {
-  getExpenseCategories,
-  getQuoteOfTheDay,
-  getSampleNotes,
-  getSampleShoppingLists,
-} from '@/lib/mock-data';
+import { getExpenseCategories, getQuoteOfTheDay, getSampleShoppingLists } from '@/lib/mock-data';
 import { eventsApi } from '@/features/calendar/api';
-import { categoryToColorKey } from '@/features/calendar/categories';
+import { categoryToColorKey as eventCategoryToColorKey } from '@/features/calendar/categories';
+import { notesApi } from '@/features/notes/api';
+import { categoryToColorKey as noteCategoryToColorKey } from '@/features/notes/categories';
 import {
   Avatar,
   AnimatedPressable,
@@ -154,7 +151,7 @@ export default function HomeScreen() {
           id: e.id,
           title: e.title,
           start: new Date(e.startAt),
-          color: categoryToColorKey(e.category),
+          color: eventCategoryToColorKey(e.category),
         }))
         .sort((a, b) => a.start.getTime() - b.start.getTime()),
     [todaysEventsData],
@@ -173,12 +170,18 @@ export default function HomeScreen() {
     () => shoppingList.items.filter((i) => !i.purchased),
     [shoppingList],
   );
+  const { data: pinnedNotesData } = useQuery({
+    queryKey: ['notes', 'pinned'],
+    queryFn: () => notesApi.list({ pinned: true }),
+  });
   const notes = useMemo(
     () =>
-      getSampleNotes()
-        .filter((n) => n.pinned)
-        .slice(0, 2),
-    [],
+      (pinnedNotesData ?? []).slice(0, 2).map((n) => ({
+        id: n.id,
+        title: n.title,
+        color: noteCategoryToColorKey(n.category),
+      })),
+    [pinnedNotesData],
   );
 
   const renderWidget = (key: HomeWidgetKey, drag: () => void, isActive: boolean) => {
