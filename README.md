@@ -6,8 +6,11 @@ A personal life-management app (tasks, calendar, notes, expenses, shopping lists
 built offline-first, with a React Native/Expo client and a NestJS/PostgreSQL backend.
 See [`docs/architecture/`](docs/architecture) for the full architecture plan.
 
-AI assistant functionality is intentionally not implemented yet — `packages/ai` is a
-scaffolded seam for a later phase.
+The AI assistant (`apps/api/src/ai`, backed by the Google Gemini API) answers questions
+using the signed-in user's tasks, calendar events, and pinned notes as read-only context —
+it cannot create or modify anything yet. Set `GEMINI_API_KEY` in `apps/api/.env` to enable
+it; without a key the `/ai/chat` endpoint returns a clear 503 instead of the client crashing.
+`packages/ai` remains reserved for future cross-app AI code (e.g. embeddings/RAG).
 
 ## Structure
 
@@ -20,7 +23,7 @@ packages/
   validation/   Zod schemas — single source of truth for API/mobile contracts
   shared/       Framework-agnostic utils (date, currency)
   config/       Shared tsconfig/eslint/prettier presets
-  ai/           Scaffold only — no implementation yet
+  ai/           Scaffold — reserved for future cross-app AI code, not yet used
 infrastructure/docker/   Reserved for production Dockerfiles (Phase 12)
 ```
 

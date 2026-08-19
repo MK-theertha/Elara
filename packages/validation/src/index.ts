@@ -8,3 +8,4 @@ export * from './note';
 export * from './expense';
 export * from './shopping';
 export * from './sync';
+export * from './ai';

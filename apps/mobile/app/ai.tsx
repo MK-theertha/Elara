@@ -1,136 +1,116 @@
-import { ScrollView, View, Text } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  ScrollView,
+  View,
+  Text,
+  TextInput as RNTextInput,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { Stack, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CalendarClock, Mic, Sparkles, StickyNote, Wallet, X } from 'lucide-react-native';
+import { CalendarClock, Send, Sparkles, StickyNote, Wallet, X } from 'lucide-react-native';
+import type { ChatMessage } from '@elara/validation';
 import { useTheme } from '@/theme/useTheme';
-import { GradientBackground, IconButton } from '@/components';
+import { AnimatedPressable, IconButton } from '@/components';
+import { aiApi } from '@/features/ai/api';
 import { useToastStore } from '@/stores/toast-store';
+import { ApiError } from '@/lib/api-client';
 import type { IconType } from '@/components/icon-type';
 
-const CAPABILITIES: { icon: IconType; title: string; description: string }[] = [
-  {
-    icon: CalendarClock,
-    title: 'Plan my day',
-    description: 'Auto-schedule tasks around your calendar',
-  },
-  {
-    icon: StickyNote,
-    title: 'Summarize notes',
-    description: 'Turn long notes into quick takeaways',
-  },
-  { icon: Wallet, title: 'Track spending', description: 'Spot trends and flag unusual expenses' },
-  {
-    icon: Sparkles,
-    title: 'Smart reminders',
-    description: 'Nudge you at the right moment, not just a time',
-  },
+const SUGGESTIONS: { icon: IconType; prompt: string }[] = [
+  { icon: CalendarClock, prompt: "What's on my plate today?" },
+  { icon: StickyNote, prompt: 'Summarize my pinned notes' },
+  { icon: Wallet, prompt: 'Do I have anything due soon?' },
+  { icon: Sparkles, prompt: 'Any upcoming tasks I should prioritize?' },
 ];
 
 export default function AiScreen() {
   const { colors, spacing, radius, typography } = useTheme();
   const insets = useSafeAreaInsets();
   const showToast = useToastStore((s) => s.show);
+  const scrollRef = useRef<ScrollView>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const send = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || sending) return;
+
+    const nextMessages: ChatMessage[] = [...messages, { role: 'user', content: trimmed }];
+    setMessages(nextMessages);
+    setInput('');
+    setSending(true);
+    try {
+      const { reply } = await aiApi.chat({ messages: nextMessages });
+      setMessages((current) => [...current, { role: 'assistant', content: reply }]);
+    } catch (err) {
+      showToast(err instanceof ApiError ? err.message : "Couldn't reach the assistant", 'danger');
+      setMessages(messages);
+      setInput(trimmed);
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={insets.top}
+    >
       <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
 
-      <View style={{ height: 320, overflow: 'hidden' }}>
-        <GradientBackground style={{ flex: 1, paddingTop: insets.top }}>
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              width: 220,
-              height: 220,
-              borderRadius: 110,
-              backgroundColor: 'rgba(255,255,255,0.10)',
-              top: -60,
-              right: -50,
-            }}
-          />
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              width: 160,
-              height: 160,
-              borderRadius: 80,
-              backgroundColor: 'rgba(255,255,255,0.08)',
-              top: 120,
-              left: -40,
-            }}
-          />
-
-          <View
-            style={{
-              paddingHorizontal: spacing.md,
-              flexDirection: 'row',
-              justifyContent: 'flex-end',
-            }}
-          >
-            <IconButton
-              icon={X}
-              accessibilityLabel="Close"
-              color="#FFFFFF"
-              variant="filled"
-              onPress={() => router.back()}
-            />
-          </View>
-
-          <View
-            style={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: spacing.sm,
-              paddingHorizontal: spacing.xl,
-            }}
-          >
-            <View
-              style={{
-                width: 76,
-                height: 76,
-                borderRadius: 38,
-                backgroundColor: 'rgba(255,255,255,0.16)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Sparkles size={34} color="#FFFFFF" strokeWidth={1.5} />
-            </View>
-            <Text style={[typography.screenTitle, { color: '#FFFFFF', textAlign: 'center' }]}>
-              Meet your AI Assistant
-            </Text>
-            <Text
-              style={[
-                typography.bodySmall,
-                { color: 'rgba(255,255,255,0.85)', textAlign: 'center' },
-              ]}
-            >
-              A calm, capable helper for your day — coming soon.
-            </Text>
-          </View>
-        </GradientBackground>
-      </View>
-
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          padding: spacing.md,
-          gap: spacing.lg,
-          paddingBottom: insets.bottom + spacing.xl,
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingTop: insets.top + spacing.xs,
+          paddingHorizontal: spacing.md,
+          paddingBottom: spacing.sm,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
         }}
       >
-        <View style={{ gap: spacing.sm }}>
-          <Text style={[typography.sectionTitle, { color: colors.text }]}>What it&apos;ll do</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {CAPABILITIES.map((c) => (
-              <View
-                key={c.title}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+          <Sparkles size={20} color={colors.primary} strokeWidth={1.75} />
+          <Text style={[typography.cardTitle, { color: colors.text }]}>AI Assistant</Text>
+        </View>
+        <IconButton icon={X} accessibilityLabel="Close" onPress={() => router.back()} />
+      </View>
+
+      {messages.length === 0 ? (
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: 'center',
+            padding: spacing.xl,
+            gap: spacing.lg,
+          }}
+        >
+          <View style={{ alignItems: 'center', gap: spacing.xs }}>
+            <Text style={[typography.sectionTitle, { color: colors.text, textAlign: 'center' }]}>
+              Ask about your day
+            </Text>
+            <Text
+              style={[typography.bodySmall, { color: colors.textSecondary, textAlign: 'center' }]}
+            >
+              I can see your tasks, calendar, and pinned notes.
+            </Text>
+          </View>
+          <View style={{ gap: spacing.sm }}>
+            {SUGGESTIONS.map((s) => (
+              <AnimatedPressable
+                key={s.prompt}
+                accessibilityRole="button"
+                onPress={() => send(s.prompt)}
+                scaleTo={0.97}
                 style={{
-                  width: '47%',
-                  gap: 6,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.sm,
                   backgroundColor: colors.surface,
                   borderRadius: radius.card,
                   borderWidth: 1,
@@ -148,75 +128,99 @@ export default function AiScreen() {
                     justifyContent: 'center',
                   }}
                 >
-                  <c.icon size={16} color={colors.primary} strokeWidth={1.75} />
+                  <s.icon size={16} color={colors.primary} strokeWidth={1.75} />
                 </View>
-                <Text style={[typography.bodyMedium, { color: colors.text }]}>{c.title}</Text>
-                <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                  {c.description}
+                <Text style={[typography.bodyMedium, { color: colors.text, flex: 1 }]}>
+                  {s.prompt}
                 </Text>
-              </View>
+              </AnimatedPressable>
             ))}
           </View>
-        </View>
-
-        <View style={{ gap: spacing.sm }}>
-          <Text style={[typography.sectionTitle, { color: colors.text }]}>A preview</Text>
-          <View
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: radius.card,
-              borderWidth: 1,
-              borderColor: colors.border,
-              padding: spacing.md,
-              gap: spacing.sm,
-            }}
-          >
+        </ScrollView>
+      ) : (
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        >
+          {messages.map((m, i) => (
             <View
+              key={i}
               style={{
-                alignSelf: 'flex-end',
-                maxWidth: '80%',
-                backgroundColor: colors.primary,
+                alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+                maxWidth: '85%',
+                backgroundColor: m.role === 'user' ? colors.primary : colors.backgroundSecondary,
                 borderRadius: radius.button,
-                borderBottomRightRadius: 4,
+                borderBottomRightRadius: m.role === 'user' ? 4 : radius.button,
+                borderBottomLeftRadius: m.role === 'assistant' ? 4 : radius.button,
                 padding: spacing.sm,
               }}
             >
-              <Text style={[typography.bodySmall, { color: colors.onPrimary }]}>
-                What&apos;s on my plate today?
+              <Text
+                style={[
+                  typography.bodySmall,
+                  { color: m.role === 'user' ? colors.onPrimary : colors.text },
+                ]}
+              >
+                {m.content}
               </Text>
             </View>
+          ))}
+          {sending ? (
             <View
               style={{
                 alignSelf: 'flex-start',
-                maxWidth: '85%',
                 backgroundColor: colors.backgroundSecondary,
                 borderRadius: radius.button,
                 borderBottomLeftRadius: 4,
                 padding: spacing.sm,
               }}
             >
-              <Text style={[typography.bodySmall, { color: colors.text }]}>
-                You&apos;ve got 3 tasks due today and a design review at 9:30. Want me to move your
-                gym session to tomorrow?
-              </Text>
+              <Text style={[typography.bodySmall, { color: colors.textTertiary }]}>Thinking…</Text>
             </View>
-          </View>
-        </View>
+          ) : null}
+        </ScrollView>
+      )}
 
-        <View style={{ alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md }}>
-          <IconButton
-            icon={Mic}
-            accessibilityLabel="Voice input (coming soon)"
-            size={26}
-            variant="filled"
-            color={colors.primary}
-            onPress={() => showToast('Voice input is coming soon')}
-          />
-          <Text style={[typography.caption, { color: colors.textTertiary }]}>
-            Tap to try voice — coming soon
-          </Text>
-        </View>
-      </ScrollView>
-    </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-end',
+          gap: spacing.xs,
+          padding: spacing.md,
+          paddingBottom: insets.bottom + spacing.sm,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        }}
+      >
+        <RNTextInput
+          value={input}
+          onChangeText={setInput}
+          placeholder="Ask me anything…"
+          placeholderTextColor={colors.textTertiary}
+          multiline
+          style={[
+            typography.body,
+            {
+              flex: 1,
+              maxHeight: 100,
+              color: colors.text,
+              backgroundColor: colors.backgroundSecondary,
+              borderRadius: radius.input,
+              paddingHorizontal: spacing.sm + 2,
+              paddingVertical: spacing.sm,
+            },
+          ]}
+        />
+        <IconButton
+          icon={Send}
+          accessibilityLabel="Send"
+          variant="filled"
+          color={colors.primary}
+          disabled={!input.trim() || sending}
+          onPress={() => send(input)}
+        />
+      </View>
+    </KeyboardAvoidingView>
   );
 }

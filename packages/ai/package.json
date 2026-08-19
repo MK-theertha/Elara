@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "description": "Scaffold only. No AI/LLM dependencies or implementation until the AI phase begins.",
+  "description": "Scaffold only. The Gemini-backed assistant lives in apps/api/src/ai; this package is reserved for AI code that needs to be shared across apps.",
   "scripts": {
     "typecheck": "tsc --noEmit"
   },

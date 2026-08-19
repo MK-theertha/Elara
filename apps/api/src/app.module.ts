@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { TasksModule } from './tasks/tasks.module';
 import { EventsModule } from './events/events.module';
 import { NotesModule } from './notes/notes.module';
+import { AiModule } from './ai/ai.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
@@ -22,6 +23,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     TasksModule,
     EventsModule,
     NotesModule,
+    AiModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

@@ -420,7 +420,7 @@ export default function HomeScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Sparkles size={16} color="#FFFFFF" strokeWidth={1.75} />
                   <Text style={[typography.caption, { color: 'rgba(255,255,255,0.85)' }]}>
-                    COMING SOON
+                    AI ASSISTANT
                   </Text>
                 </View>
                 <Pressable onLongPress={drag} disabled={isActive} hitSlop={8}>
@@ -428,10 +428,10 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
               <Text style={[typography.cardTitle, { color: '#FFFFFF' }]}>
-                Meet your AI Assistant
+                Ask your AI Assistant
               </Text>
               <Text style={[typography.bodySmall, { color: 'rgba(255,255,255,0.85)' }]}>
-                Ask questions, plan your day, and get smart suggestions — arriving soon.
+                Ask about your tasks, calendar, and notes — get answers in seconds.
               </Text>
             </GradientBackground>
           </Pressable>
