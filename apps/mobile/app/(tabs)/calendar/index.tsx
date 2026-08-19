@@ -1,20 +1,24 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { startOfMonth, startOfWeek } from '@elara/shared';
 import { useTheme } from '@/theme/useTheme';
 import {
   EmptyState,
+  ErrorState,
   FloatingButton,
   IconButton,
   ScreenHeader,
   SegmentedControl,
+  SkeletonCard,
 } from '@/components';
 import { CalendarCard } from '@/components/cards';
 import { categoryColors } from '@/theme/colors';
-import { getSampleEvents } from '@/lib/mock-data';
+import { eventsApi } from '@/features/calendar/api';
+import { categoryToColorKey } from '@/features/calendar/categories';
 import { buildMonthGrid, isSameDay } from '@/components/DatePicker';
 
 type CalendarView = 'month' | 'week' | 'agenda';
@@ -34,7 +38,28 @@ export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [monthAnchor, setMonthAnchor] = useState(() => startOfMonth(new Date()));
 
-  const events = useMemo(() => getSampleEvents(), []);
+  const {
+    data: eventsData,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ['events'],
+    queryFn: () => eventsApi.list(),
+  });
+
+  const events = useMemo(
+    () =>
+      (eventsData ?? []).map((e) => ({
+        id: e.id,
+        title: e.title,
+        start: new Date(e.startAt),
+        end: new Date(e.endAt),
+        location: e.location ?? undefined,
+        color: categoryToColorKey(e.category),
+      })),
+    [eventsData],
+  );
 
   const eventsByDayKey = useMemo(() => {
     const map = new Map<string, typeof events>();
@@ -93,246 +118,264 @@ export default function CalendarScreen() {
           paddingBottom: insets.bottom + 140,
         }}
       >
-        {view === 'month' ? (
+        {isLoading ? (
+          <View style={{ gap: spacing.sm }}>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </View>
+        ) : isError ? (
+          <ErrorState description="Couldn't load your events." onRetry={() => refetch()} />
+        ) : (
           <>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Text style={[typography.cardTitle, { color: colors.text }]}>
-                {monthAnchor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-              </Text>
-              <View style={{ flexDirection: 'row', gap: spacing.xxs }}>
-                <IconButton
-                  icon={ChevronLeft}
-                  accessibilityLabel="Previous month"
-                  variant="filled"
-                  onPress={() =>
-                    setMonthAnchor((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))
-                  }
-                />
-                <IconButton
-                  icon={ChevronRight}
-                  accessibilityLabel="Next month"
-                  variant="filled"
-                  onPress={() =>
-                    setMonthAnchor((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))
-                  }
-                />
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row' }}>
-              {WEEKDAY_LABELS.map((label, i) => (
-                <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={[typography.tinyLabel, { color: colors.textTertiary }]}>
-                    {label}
+            {view === 'month' ? (
+              <>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Text style={[typography.cardTitle, { color: colors.text }]}>
+                    {monthAnchor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                   </Text>
+                  <View style={{ flexDirection: 'row', gap: spacing.xxs }}>
+                    <IconButton
+                      icon={ChevronLeft}
+                      accessibilityLabel="Previous month"
+                      variant="filled"
+                      onPress={() =>
+                        setMonthAnchor((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))
+                      }
+                    />
+                    <IconButton
+                      icon={ChevronRight}
+                      accessibilityLabel="Next month"
+                      variant="filled"
+                      onPress={() =>
+                        setMonthAnchor((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))
+                      }
+                    />
+                  </View>
                 </View>
-              ))}
-            </View>
 
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {monthGrid.map((date, i) => {
-                if (!date) return <View key={i} style={{ width: `${100 / 7}%`, height: 52 }} />;
-                const dayEvents = eventsByDay(date);
-                const selected = isSameDay(date, selectedDate);
-                const today = isSameDay(date, new Date());
-                return (
-                  <View
-                    key={i}
-                    style={{ width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 2 }}
-                  >
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={date.toDateString()}
-                      onPress={() => setSelectedDate(date)}
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 19,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: selected ? colors.primary : 'transparent',
-                        borderWidth: today && !selected ? 1.5 : 0,
-                        borderColor: colors.primary,
-                        gap: 2,
-                      }}
-                    >
-                      <Text
-                        style={[
-                          typography.bodySmall,
-                          { color: selected ? colors.onPrimary : colors.text },
-                        ]}
-                      >
-                        {date.getDate()}
+                <View style={{ flexDirection: 'row' }}>
+                  {WEEKDAY_LABELS.map((label, i) => (
+                    <View key={i} style={{ flex: 1, alignItems: 'center' }}>
+                      <Text style={[typography.tinyLabel, { color: colors.textTertiary }]}>
+                        {label}
                       </Text>
-                    </Pressable>
-                    <View style={{ flexDirection: 'row', gap: 2, marginTop: 3, height: 4 }}>
-                      {dayEvents.slice(0, 3).map((e) => (
-                        <View
-                          key={e.id}
+                    </View>
+                  ))}
+                </View>
+
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                  {monthGrid.map((date, i) => {
+                    if (!date) return <View key={i} style={{ width: `${100 / 7}%`, height: 52 }} />;
+                    const dayEvents = eventsByDay(date);
+                    const selected = isSameDay(date, selectedDate);
+                    const today = isSameDay(date, new Date());
+                    return (
+                      <View
+                        key={i}
+                        style={{ width: `${100 / 7}%`, alignItems: 'center', paddingVertical: 2 }}
+                      >
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={date.toDateString()}
+                          onPress={() => setSelectedDate(date)}
                           style={{
-                            width: 4,
-                            height: 4,
-                            borderRadius: 2,
-                            backgroundColor: categoryColors[e.color],
+                            width: 38,
+                            height: 38,
+                            borderRadius: 19,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: selected ? colors.primary : 'transparent',
+                            borderWidth: today && !selected ? 1.5 : 0,
+                            borderColor: colors.primary,
+                            gap: 2,
                           }}
+                        >
+                          <Text
+                            style={[
+                              typography.bodySmall,
+                              { color: selected ? colors.onPrimary : colors.text },
+                            ]}
+                          >
+                            {date.getDate()}
+                          </Text>
+                        </Pressable>
+                        <View style={{ flexDirection: 'row', gap: 2, marginTop: 3, height: 4 }}>
+                          {dayEvents.slice(0, 3).map((e) => (
+                            <View
+                              key={e.id}
+                              style={{
+                                width: 4,
+                                height: 4,
+                                borderRadius: 2,
+                                backgroundColor: categoryColors[e.color],
+                              }}
+                            />
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+                  <Text style={[typography.sectionTitle, { color: colors.text }]}>
+                    {selectedDate.toLocaleDateString(undefined, {
+                      weekday: 'long',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </Text>
+                  {selectedDayEvents.length > 0 ? (
+                    selectedDayEvents.map((e) => (
+                      <CalendarCard
+                        key={e.id}
+                        title={e.title}
+                        start={e.start}
+                        end={e.end}
+                        color={e.color}
+                        location={e.location}
+                      />
+                    ))
+                  ) : (
+                    <EmptyState
+                      icon={CalendarPlus}
+                      title="Nothing scheduled"
+                      description="Tap + to add an event for this day."
+                    />
+                  )}
+                </View>
+              </>
+            ) : null}
+
+            {view === 'week' ? (
+              <>
+                <View style={{ flexDirection: 'row', gap: spacing.xxs }}>
+                  {weekDays.map((d) => {
+                    const dayEvents = eventsByDay(d);
+                    const selected = isSameDay(d, selectedDate);
+                    return (
+                      <Pressable
+                        key={d.toISOString()}
+                        accessibilityRole="button"
+                        accessibilityLabel={d.toDateString()}
+                        onPress={() => setSelectedDate(d)}
+                        style={{
+                          flex: 1,
+                          alignItems: 'center',
+                          gap: 4,
+                          paddingVertical: spacing.sm,
+                          borderRadius: radius.button,
+                          backgroundColor: selected ? colors.primary : colors.backgroundSecondary,
+                        }}
+                      >
+                        <Text
+                          style={[
+                            typography.tinyLabel,
+                            { color: selected ? colors.onPrimary : colors.textTertiary },
+                          ]}
+                        >
+                          {d.toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 1)}
+                        </Text>
+                        <Text
+                          style={[
+                            typography.bodyMedium,
+                            { color: selected ? colors.onPrimary : colors.text },
+                          ]}
+                        >
+                          {d.getDate()}
+                        </Text>
+                        <View style={{ flexDirection: 'row', gap: 2, height: 4 }}>
+                          {dayEvents.slice(0, 3).map((e) => (
+                            <View
+                              key={e.id}
+                              style={{
+                                width: 4,
+                                height: 4,
+                                borderRadius: 2,
+                                backgroundColor: selected
+                                  ? colors.onPrimary
+                                  : categoryColors[e.color],
+                              }}
+                            />
+                          ))}
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+                  <Text style={[typography.sectionTitle, { color: colors.text }]}>
+                    {selectedDate.toLocaleDateString(undefined, {
+                      weekday: 'long',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </Text>
+                  {selectedDayEvents.length > 0 ? (
+                    selectedDayEvents.map((e) => (
+                      <CalendarCard
+                        key={e.id}
+                        title={e.title}
+                        start={e.start}
+                        end={e.end}
+                        color={e.color}
+                        location={e.location}
+                      />
+                    ))
+                  ) : (
+                    <EmptyState
+                      icon={CalendarPlus}
+                      title="Nothing scheduled"
+                      description="Tap + to add an event for this day."
+                    />
+                  )}
+                </View>
+              </>
+            ) : null}
+
+            {view === 'agenda' ? (
+              agendaGroups.length > 0 ? (
+                agendaGroups.map(([dateKey, dayEvents]) => (
+                  <View key={dateKey} style={{ gap: spacing.sm }}>
+                    <Text style={[typography.sectionTitle, { color: colors.text }]}>
+                      {new Date(dateKey).toLocaleDateString(undefined, {
+                        weekday: 'long',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </Text>
+                    <View style={{ gap: spacing.sm }}>
+                      {dayEvents.map((e) => (
+                        <CalendarCard
+                          key={e.id}
+                          title={e.title}
+                          start={e.start}
+                          end={e.end}
+                          color={e.color}
+                          location={e.location}
                         />
                       ))}
                     </View>
                   </View>
-                );
-              })}
-            </View>
-
-            <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
-              <Text style={[typography.sectionTitle, { color: colors.text }]}>
-                {selectedDate.toLocaleDateString(undefined, {
-                  weekday: 'long',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </Text>
-              {selectedDayEvents.length > 0 ? (
-                selectedDayEvents.map((e) => (
-                  <CalendarCard
-                    key={e.id}
-                    title={e.title}
-                    start={e.start}
-                    end={e.end}
-                    color={e.color}
-                    location={e.location}
-                  />
                 ))
               ) : (
                 <EmptyState
                   icon={CalendarPlus}
-                  title="Nothing scheduled"
-                  description="Tap + to add an event for this day."
+                  title="No events"
+                  description="Your agenda is clear."
                 />
-              )}
-            </View>
+              )
+            ) : null}
           </>
-        ) : null}
-
-        {view === 'week' ? (
-          <>
-            <View style={{ flexDirection: 'row', gap: spacing.xxs }}>
-              {weekDays.map((d) => {
-                const dayEvents = eventsByDay(d);
-                const selected = isSameDay(d, selectedDate);
-                return (
-                  <Pressable
-                    key={d.toISOString()}
-                    accessibilityRole="button"
-                    accessibilityLabel={d.toDateString()}
-                    onPress={() => setSelectedDate(d)}
-                    style={{
-                      flex: 1,
-                      alignItems: 'center',
-                      gap: 4,
-                      paddingVertical: spacing.sm,
-                      borderRadius: radius.button,
-                      backgroundColor: selected ? colors.primary : colors.backgroundSecondary,
-                    }}
-                  >
-                    <Text
-                      style={[
-                        typography.tinyLabel,
-                        { color: selected ? colors.onPrimary : colors.textTertiary },
-                      ]}
-                    >
-                      {d.toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 1)}
-                    </Text>
-                    <Text
-                      style={[
-                        typography.bodyMedium,
-                        { color: selected ? colors.onPrimary : colors.text },
-                      ]}
-                    >
-                      {d.getDate()}
-                    </Text>
-                    <View style={{ flexDirection: 'row', gap: 2, height: 4 }}>
-                      {dayEvents.slice(0, 3).map((e) => (
-                        <View
-                          key={e.id}
-                          style={{
-                            width: 4,
-                            height: 4,
-                            borderRadius: 2,
-                            backgroundColor: selected ? colors.onPrimary : categoryColors[e.color],
-                          }}
-                        />
-                      ))}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
-              <Text style={[typography.sectionTitle, { color: colors.text }]}>
-                {selectedDate.toLocaleDateString(undefined, {
-                  weekday: 'long',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </Text>
-              {selectedDayEvents.length > 0 ? (
-                selectedDayEvents.map((e) => (
-                  <CalendarCard
-                    key={e.id}
-                    title={e.title}
-                    start={e.start}
-                    end={e.end}
-                    color={e.color}
-                    location={e.location}
-                  />
-                ))
-              ) : (
-                <EmptyState
-                  icon={CalendarPlus}
-                  title="Nothing scheduled"
-                  description="Tap + to add an event for this day."
-                />
-              )}
-            </View>
-          </>
-        ) : null}
-
-        {view === 'agenda' ? (
-          agendaGroups.length > 0 ? (
-            agendaGroups.map(([dateKey, dayEvents]) => (
-              <View key={dateKey} style={{ gap: spacing.sm }}>
-                <Text style={[typography.sectionTitle, { color: colors.text }]}>
-                  {new Date(dateKey).toLocaleDateString(undefined, {
-                    weekday: 'long',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </Text>
-                <View style={{ gap: spacing.sm }}>
-                  {dayEvents.map((e) => (
-                    <CalendarCard
-                      key={e.id}
-                      title={e.title}
-                      start={e.start}
-                      end={e.end}
-                      color={e.color}
-                      location={e.location}
-                    />
-                  ))}
-                </View>
-              </View>
-            ))
-          ) : (
-            <EmptyState icon={CalendarPlus} title="No events" description="Your agenda is clear." />
-          )
-        ) : null}
+        )}
       </ScrollView>
 
       <View style={{ position: 'absolute', right: spacing.md, bottom: insets.bottom + 100 }}>

@@ -13,7 +13,7 @@ import {
   StickyNote,
   Wallet,
 } from 'lucide-react-native';
-import { formatCurrency } from '@elara/shared';
+import { endOfDay, formatCurrency, startOfDay } from '@elara/shared';
 import type { TaskDto } from '@elara/validation';
 import { useTheme } from '@/theme/useTheme';
 import { categoryColors } from '@/theme/colors';
@@ -23,8 +23,9 @@ import {
   getQuoteOfTheDay,
   getSampleNotes,
   getSampleShoppingLists,
-  getTodaysEvents,
 } from '@/lib/mock-data';
+import { eventsApi } from '@/features/calendar/api';
+import { categoryToColorKey } from '@/features/calendar/categories';
 import {
   Avatar,
   AnimatedPressable,
@@ -138,7 +139,26 @@ export default function HomeScreen() {
     [queryClient, showToast],
   );
 
-  const todaysEvents = useMemo(() => getTodaysEvents(), []);
+  const todayRange = useMemo(
+    () => ({ from: startOfDay(new Date()).toISOString(), to: endOfDay(new Date()).toISOString() }),
+    [],
+  );
+  const { data: todaysEventsData } = useQuery({
+    queryKey: ['events', 'today'],
+    queryFn: () => eventsApi.list({ from: todayRange.from, to: todayRange.to, view: 'day' }),
+  });
+  const todaysEvents = useMemo(
+    () =>
+      (todaysEventsData ?? [])
+        .map((e) => ({
+          id: e.id,
+          title: e.title,
+          start: new Date(e.startAt),
+          color: categoryToColorKey(e.category),
+        }))
+        .sort((a, b) => a.start.getTime() - b.start.getTime()),
+    [todaysEventsData],
+  );
   const expenseCategories = useMemo(() => getExpenseCategories(), []);
   const monthTotal = useMemo(
     () => expenseCategories.reduce((sum, c) => sum + c.amount, 0),
